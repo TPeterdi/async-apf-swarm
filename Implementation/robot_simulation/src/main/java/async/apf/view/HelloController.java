@@ -1,4 +1,4 @@
-package async.apf.robot_simulation;
+package async.apf.view;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;

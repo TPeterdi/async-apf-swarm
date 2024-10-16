@@ -1,4 +1,4 @@
-package async.apf.robot_simulation;
+package async.apf.view;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;

@@ -3,6 +3,6 @@ module async.apf.robot_simulation {
     requires javafx.fxml;
 
 
-    opens async.apf.robot_simulation to javafx.fxml;
-    exports async.apf.robot_simulation;
+    opens async.apf.view to javafx.fxml;
+    exports async.apf.view;
 }
