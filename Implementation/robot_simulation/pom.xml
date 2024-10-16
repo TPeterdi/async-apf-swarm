@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>async.apf</groupId>
-    <artifactId>robot_simulation</artifactId>
+    <artifactId>view</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>robot_simulation</name>
+    <name>view</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -60,7 +60,7 @@
                         <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>async.apf.robot_simulation/async.apf.robot_simulation.HelloApplication
+                            <mainClass>async.apf.view/async.apf.view.HelloApplication
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>

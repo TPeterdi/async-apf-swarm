@@ -1,4 +1,4 @@
-module async.apf.robot_simulation {
+module async.apf.view {
     requires javafx.controls;
     requires javafx.fxml;
 
