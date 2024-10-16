@@ -1,3 +1,5 @@
+package async.apf.model;
+
 import java.util.ArrayList;
 import java.util.List;
 
