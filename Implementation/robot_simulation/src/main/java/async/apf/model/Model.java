@@ -28,6 +28,7 @@ public class Model implements IModel {
 
     @Override
     public void startSimulation() throws InvalidInputException {
+        // TODO: guard against multiple starts.
         new Simulation(this.simulationEventEmitter, this.loadedStartingConfiguration, this.loadedTargetPattern)
             .start();
     }

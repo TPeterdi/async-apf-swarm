@@ -26,7 +26,7 @@ public class Controller implements IController {
     }
 
     @Override
-    public void setPattern(List<Coordinate> pattern) {
+    public void setStartingConfiguration(List<Coordinate> pattern) {
         this.model.storeStartingConfiguration(pattern);
     }
 
