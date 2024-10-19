@@ -1,38 +1,44 @@
 package async.apf.model;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+
+import async.apf.model.enums.Cardinal;
+import async.apf.model.enums.RobotEventType;
+import async.apf.model.events.RobotEvent;
 
 public class Robot {
-    private String robotId;
-    private int currentX, currentY;
+    private boolean working = false;
+    private CountDownLatch lookLatch;
+    private List<Coordinate> currentConfiguration;
+    private Cardinal nextMove = null;
 
-    public Robot(String robotId, int startX, int startY) {
-        this.robotId = robotId;
-        this.currentX = startX;
-        this.currentY = startY;
-    }
+    public Robot() {}
 
-    // Simulate a robot performing actions asynchronously
-    public CompletableFuture<Event> performActions() {
-        
-        // Robot starts with LOOKING event
+    public CompletableFuture<RobotEvent> activate() {
+        if (this.working) return CompletableFuture.completedFuture(new RobotEvent(RobotEventType.WORKING));
+
+        this.working = true;
+        this.lookLatch = new CountDownLatch(1);
+        Cardinal orientation = null;
+        // LOOK
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Thread.sleep((long) (Math.random() * 1000));
-                return new Event(robotId, RobotEventType.LOOKING, 0, 0, 0, 0);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return null;
+            return new RobotEvent(RobotEventType.LOOK);
         })
         // COMPUTE
         .thenCompose(event -> {
-            display(event);
             return CompletableFuture.supplyAsync(() -> {
                 try {
+                    lookLatch.await();
+
+                    // TODO: Do actual computation
                     Thread.sleep((long) (Math.random() * 1000));
-                    return new Event(robotId, RobotEventType.COMPUTING, 0, 0, 0, 0);
-                } catch (InterruptedException e) {
+                    this.nextMove = Cardinal.EAST;
+
+                    return new RobotEvent(RobotEventType.COMPUTE);
+                }
+                catch (InterruptedException e) {
                     e.printStackTrace();
                 }
                 return null;
@@ -40,35 +46,36 @@ public class Robot {
         })
         // MOVE
         .thenCompose(event -> {
-            display(event);
             return CompletableFuture.supplyAsync(() -> {
-                // Robot emits MOVING event with coordinates
-                int newX = currentX + (int) (Math.random() * 10); // Random new position
-                int newY = currentY + (int) (Math.random() * 10);
-                Event moveEvent = new Event(robotId, RobotEventType.MOVING, currentX, currentY, newX, newY);
-                currentX = newX;
-                currentY = newY;
-                return moveEvent;
+                switch (this.nextMove) {
+                    case NORTH -> {
+                        return new RobotEvent(RobotEventType.MOVE_NORTH);
+                    }
+                    case EAST -> {
+                        return new RobotEvent(RobotEventType.MOVE_EAST);
+                    }
+                    case SOUTH -> {
+                        return new RobotEvent(RobotEventType.MOVE_SOUTH);
+                    }
+                    case WEST -> {
+                        return new RobotEvent(RobotEventType.MOVE_WEST);
+                    }
+                    default -> throw new AssertionError();
+                }
             });
         })
         // IDLE
         .thenCompose(event -> {
-            display(event);
             return CompletableFuture.supplyAsync(() -> {
-                // Robot emits IDLE event
-                try {
-                    Thread.sleep((long) (Math.random() * 1000));
-                    return new Event(robotId, RobotEventType.IDLE, 0, 0, 0, 0);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return null;
+                this.nextMove = null;
+                this.currentConfiguration = null;
+                return new RobotEvent(RobotEventType.IDLE);
             });
         });
     }
 
-    // Display method to simulate event handling (for debugging purposes)
-    private void display(Event event) {
-        System.out.println(event);
+    public void supplyConfiguration(List<Coordinate> configuration) {
+        this.currentConfiguration = configuration;
+        lookLatch.countDown();
     }
 }

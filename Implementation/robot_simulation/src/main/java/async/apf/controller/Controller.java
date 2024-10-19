@@ -1,41 +1,53 @@
 package async.apf.controller;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
-import async.apf.model.Event;
-import async.apf.model.Robot;
-import async.apf.model.RobotEventType;
+import async.apf.interfaces.IController;
+import async.apf.interfaces.IEvent;
+import async.apf.interfaces.IModel;
+import async.apf.interfaces.IView;
+import async.apf.model.Coordinate;
+import async.apf.model.events.SimulationEvent;
 import async.apf.view.View;
+import javafx.application.Application;
 
-public class Controller {
-    private View view;
+public class Controller implements IController {
+    private final IView view;
+    private final IModel model;
 
-    public Controller(View view) {
+    public Controller(IModel model, IView view) {
+        this.model = model;
         this.view = view;
     }
 
-    // Method to start the actions for k robots and handle events
-    public void manageRobots(List<Robot> robots) {
-        
-        // Emit a global SIMULATION_START event
-        view.handleEvent(new Event(RobotEventType.SIMULATION_START));
+    @Override
+    public void startApp(String[] args) {
+        Application.launch(View.class, args);
+    }
 
-        // For each robot, perform actions and handle the events asynchronously
-        for (Robot robot : robots) {
-            // robot.performActions().thenAccept(event -> {
-            //     view.handleEvent(event);
-            // });
-        }
+    @Override
+    public void setPattern(List<Coordinate> pattern) {
+        this.model.storeStartingConfiguration(pattern);
+    }
 
-        // Emit a global SIMULATION_END event after some time (for demonstration)
-        CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(5000); // Wait for the robots to finish
-                view.handleEvent(new Event(RobotEventType.SIMULATION_END));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+    @Override
+    public void setTargetPattern(List<Coordinate> pattern) {
+        this.model.storeTargetPattern(pattern);
+    }
+
+    @Override
+    public void displayEvent(SimulationEvent event) {
+        this.view.handleEvent(event);
+    }
+
+    @Override
+    public void startSimulation() throws Exception {
+        this.model.startSimulation();
+    }
+
+    @Override
+    public void onEvent(IEvent event) {
+        if (event instanceof SimulationEvent simulationEvent)
+            this.displayEvent(simulationEvent);
     }
 }
