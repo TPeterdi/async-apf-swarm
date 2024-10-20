@@ -46,6 +46,11 @@ public class Controller implements IController {
     }
 
     @Override
+    public boolean isSimulationRunning() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
     public void onEvent(IEvent event) {
         if (event instanceof SimulationEvent simulationEvent)
             this.displayEvent(simulationEvent);

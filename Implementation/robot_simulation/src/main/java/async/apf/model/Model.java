@@ -2,15 +2,22 @@ package async.apf.model;
 
 import java.util.List;
 
+import async.apf.interfaces.IEvent;
 import async.apf.interfaces.IModel;
+import async.apf.model.enums.SimulationEventType;
 import async.apf.model.events.EventEmitter;
+import async.apf.model.events.SimulationEvent;
 import async.apf.model.exceptions.InvalidInputException;
 
 public class Model implements IModel {
+    private boolean isSimulationRunning = false;
+
     private List<Coordinate> loadedStartingConfiguration;
     private List<Coordinate> loadedTargetPattern;
 
     private final EventEmitter simulationEventEmitter;
+
+    private Simulation currentSimulation;
 
     public Model(EventEmitter simulationEventEmitter) {
         this.simulationEventEmitter = simulationEventEmitter;
@@ -28,9 +35,21 @@ public class Model implements IModel {
 
     @Override
     public void startSimulation() throws InvalidInputException {
-        // TODO: guard against multiple starts.
-        new Simulation(this.simulationEventEmitter, this.loadedStartingConfiguration, this.loadedTargetPattern)
-            .start();
+        if (this.isSimulationRunning) return;
+
+        this.isSimulationRunning = true;
+        
+        this.currentSimulation = new Simulation(this.simulationEventEmitter, this.loadedStartingConfiguration, this.loadedTargetPattern);
+        this.currentSimulation.start();
+    }
+
+    @Override
+    public void onEvent(IEvent event) {
+        if (event instanceof SimulationEvent simulationEvent && 
+            simulationEvent.getEventType() == SimulationEventType.SIMULATION_END)
+        {
+            this.isSimulationRunning = false;
+        }
     }
     
 }

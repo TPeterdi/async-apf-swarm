@@ -1,5 +1,6 @@
 package async.apf.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +58,14 @@ public class Simulation {
                 RobotEventType eventType = robotEvent.getEventType();
                 if (null != eventType)
                     switch (eventType) {
-                    case WORKING -> {return;}
+                    case ACTIVE -> {return;}
                     case STAY_PUT -> {return;}
                     case LOOK ->
                     {
-                        pickedRobot.supplyConfiguration(this.currentConfiguration);
                         globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_LOOKING));
+
+                        Coordinate robotLocation = currentConfiguration.get(nextRobotIndex);
+                        pickedRobot.supplyConfigurations(translateConfigurationToRobotsCoordinate(robotLocation), this.targetPattern);
                     }
                     case COMPUTE ->
                         globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_COMPUTING));
@@ -77,7 +80,7 @@ public class Simulation {
                     case IDLE ->
                         globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_IDLE));
                     default ->
-                        throw new IllegalArgumentException("Unexpected value: " + robotEvent.getEventType());
+                        throw new IllegalArgumentException("Unexpected value: " + eventType);
                     }
             });
         }
@@ -92,10 +95,10 @@ public class Simulation {
         currentCoordinate.moveBy(dx, dy);
 
         // We only update the running state after each move (since that's the only event that can achieve our goal).
-        this.running = !finished();
+        this.running = !patternCompleted();
     }
 
-    private boolean finished() {
+    private boolean patternCompleted() {
         // Count occurrences of each coordinate in the first list
         Map<Coordinate, Integer> countMap = new HashMap<>();
         for (Coordinate coord : targetPattern) {
@@ -114,5 +117,17 @@ public class Simulation {
 
         // If all counts are zero, the lists contain the same coordinates
         return true;
+    }
+
+    private List<Coordinate> translateConfigurationToRobotsCoordinate(Coordinate robotCoordinate) {
+        List<Coordinate> translatedCoordinates = new ArrayList<>();
+        for (Coordinate coordinate : this.currentConfiguration) {
+            translatedCoordinates.add(coordinate.translate(robotCoordinate));
+        }
+        return translatedCoordinates;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 }

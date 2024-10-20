@@ -3,7 +3,7 @@ package async.apf.model.enums;
 public enum RobotEventType {
     LOOK,
     COMPUTE,
-    WORKING,
+    ACTIVE,
     MOVE_NORTH,
     MOVE_EAST,
     MOVE_SOUTH,
