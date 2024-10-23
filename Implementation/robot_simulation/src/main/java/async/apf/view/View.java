@@ -1,221 +1,209 @@
 package async.apf.view;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import async.apf.interfaces.IView;
 import async.apf.model.events.SimulationEvent;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import async.apf.interfaces.IView;
 import javafx.application.Application;
-import javafx.event.ActionEvent;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.Pane;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
+import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
 public class View extends Application implements IView {
-    private boolean simulationRunning = false; // Jelzi, hogy fut-e a szimuláció
-    private List<Circle> robots = new ArrayList<>(); // Robotokat reprezentáló körök
-    private List<Circle> points = new ArrayList<>(); // Célpontokat reprezentáló pontok
-    private List<Circle> startPoints = new ArrayList<>(); // Kezdeti pontok piros körök
-    private List<Line> lines = new ArrayList<>(); // Vonalak a robotok útvonalához
-
-    // Robotok színei
-    private Color[] robotColors = {Color.BLUE, Color.GREEN, Color.ORANGE, Color.PURPLE, Color.YELLOW};
-
-    // UI elemek
-    private TextField robotInput;
-    private TextField pointInput;
+    private String initialState = null;
+    private String targetState = null;
+    private Button simulationStartButton;
+    private Boolean isSimulationRunning = false;
+    private Boolean isSimulationFinished = false;
+    private double mouseX;
+    private double mouseY;
+    private double translateX = 0;
+    private double translateY = 0;
+    private double scaleFactor = 1.0;
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Robotok mozgásának szimulációja");
 
-        Pane root = new Pane();
+        // Főablak három gombbal
+        Button setInitialStateButton = new Button("Set initial state");
+        Button setTargetStateButton = new Button("Set target state");
+        simulationStartButton = new Button("Simulation start");
+        simulationStartButton.setDisable(false);
 
-        // Robotok számának input mezője
-        Label robotLabel = new Label("Robotok száma:");
-        robotLabel.setLayoutX(10);
-        robotLabel.setLayoutY(10);
-        root.getChildren().add(robotLabel);
-
-        robotInput = new TextField();
-        robotInput.setLayoutX(150);
-        robotInput.setLayoutY(10);
-        root.getChildren().add(robotInput);
-
-        // Célpontok számának input mezője
-        Label pointLabel = new Label("Célpontok száma:");
-        pointLabel.setLayoutX(10);
-        pointLabel.setLayoutY(40);
-        root.getChildren().add(pointLabel);
-
-        pointInput = new TextField();
-        pointInput.setLayoutX(150);
-        pointInput.setLayoutY(40);
-        root.getChildren().add(pointInput);
-
-        Button btn = new Button();
-        btn.setText("Start szimuláció");
-        btn.setLayoutX(150);
-        btn.setLayoutY(80);
-        root.getChildren().add(btn);
-
-        // Gombnyomás eseménykezelő
-        btn.setOnAction((ActionEvent event) -> {
-            if (!simulationRunning) {
-                // Reset előtt töröljük a vonalakat és a robotokat
-                resetSimulation(root);
-                int robotCount = Integer.parseInt(robotInput.getText());
-                int pointCount = Integer.parseInt(pointInput.getText());
-
-                // Célpontok és robotok létrehozása a megadott számok alapján
-                createPoints(root, pointCount);
-                createRobotsAndStartPoints(root, robotCount);
-
-                simulationRunning = true;
-                btn.setText("Szimuláció folyamatban...");
-
-                // Indítjuk az animációt
-                startSimulation(root);
-
-                // Az animáció befejeződése után állítsuk vissza a gombot
-                Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> {
-                    simulationRunning = false;
-                    btn.setText("Újraindítás");
-                }));
-                timeline.play();
-            } else {
-                // Újraindítás
-                resetSimulation(root);
-                btn.setText("Start szimuláció");
-            }
+        // Gomb események kezelése
+        setInitialStateButton.setOnAction(e -> openInitialWindow());
+        setTargetStateButton.setOnAction(e -> openTargetWindow());
+        simulationStartButton.setOnAction(e -> {
+            // A szimuláció indításához szükséges logika
+            System.out.println("Simulation beginning...");
+            System.out.println("Initial state: " + initialState);
+            System.out.println("Target state: " + targetState);
+            isSimulationRunning = true;
+            openSimulationWindow();
         });
 
-        Scene scene = new Scene(root, 400, 400);
+        // Layout
+        VBox layout = new VBox(10, setInitialStateButton, setTargetStateButton, simulationStartButton);
+        Scene scene = new Scene(layout, 800, 600);
+
+        // Főablak beállítása
+        primaryStage.setTitle("Robot Simulation");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    // Robotok és induló pontok létrehozása
-    private void createRobotsAndStartPoints(Pane root, int robotCount) {
-        for (int i = 0; i < robotCount; i++) {
-            // Kezdeti pont létrehozása (piros kör)
-            Circle startPoint = new Circle(5, Color.RED);
-            startPoint.setCenterX(50 + i * 100);
-            startPoint.setCenterY(50);
-            startPoints.add(startPoint);
-            root.getChildren().add(startPoint);
+    private void openInitialWindow() {
+        Stage newWindow = new Stage();
+        newWindow.setTitle("Initial state");
 
-            // Robot létrehozása
-            Circle robot = new Circle(10, robotColors[i % robotColors.length]);  // Robotok különböző színűek
-            robot.setCenterX(startPoint.getCenterX());
-            robot.setCenterY(startPoint.getCenterY());
-            robots.add(robot);
-            root.getChildren().add(robot);
-        }
-    }
+        Label label = new Label("Set the value:");
+        TextField textField = new TextField();
 
-    // Célpontok létrehozása
-    private void createPoints(Pane root, int pointCount) {
-        points.clear();  // Kiürítjük a korábbi pontokat
-        for (int i = 0; i < pointCount; i++) {
-            Circle point = new Circle(5, Color.RED);
-            point.setCenterX(50 + (i % 3) * 100);  // Módosított x koordináta
-            point.setCenterY(300 + (i / 3) * 50);  // Módosított y koordináta
-            points.add(point);
-            root.getChildren().add(point);
-        }
-    }
+        Button importButton = new Button("Import from file (csv)");
+        Button randomButton = new Button("Random");
+        Button resetButton = new Button("Reset");
+        Button closeButton = new Button("Close");
+        Button confirmButton = new Button("Confirm");
 
-    // Szimuláció elindítása
-    private void startSimulation(Pane root) {
-        // Véletlenszerű célpontok kiosztása a robotok számára
-        List<Circle> shuffledPoints = new ArrayList<>(points);
-        Collections.shuffle(shuffledPoints);  // Véletlenszerűsítjük a célpontokat
-
-        Set<Circle> assignedPoints = new HashSet<>();  // Követjük a már lefoglalt pontokat
-
-        for (int i = 0; i < robots.size(); i++) {
-            Circle robot = robots.get(i);
-            Circle point = null;
-
-            // Keresünk egy nem foglalt pontot a robot számára
-            for (Circle shuffledPoint : shuffledPoints) {
-                if (!assignedPoints.contains(shuffledPoint)) {
-                    point = shuffledPoint;
-                    assignedPoints.add(point);  // Lefoglaljuk a pontot
-                    break; // Kilépünk, ha találtunk egy szabad pontot
+        confirmButton.setOnAction(e -> {
+                    initialState = textField.getText();
+                    newWindow.close();
+                    checkStates();
                 }
+            );
+
+        VBox layout = new VBox(10, label, textField, importButton, randomButton, resetButton, closeButton, confirmButton);
+        Scene scene = new Scene(layout, 400, 500);
+
+        newWindow.setScene(scene);
+        newWindow.show();
+    }
+
+    private void openTargetWindow() {
+        Stage newWindow = new Stage();
+        newWindow.setTitle("Target state");
+
+        Label label = new Label("Set the value:");
+        TextField textField = new TextField();
+
+        Button importButton = new Button("Import from file (csv)");
+        Button randomButton = new Button("Random");
+        Button resetButton = new Button("Reset");
+        Button closeButton = new Button("Close");
+        Button confirmButton = new Button("Confirm");
+        confirmButton.setOnAction(e -> {
+                    targetState = textField.getText();
+                    newWindow.close();
+                    checkStates();
+                }
+        );
+
+        VBox layout = new VBox(10, label, textField, importButton, randomButton, resetButton, closeButton, confirmButton);
+        Scene scene = new Scene(layout, 400, 500);
+
+        newWindow.setScene(scene);
+        newWindow.show();
+    }
+
+    private void openSimulationWindow() {
+        Stage newWindow = new Stage();
+        newWindow.setTitle("Simulation");
+        
+        Canvas canvas = new Canvas(800, 600);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        drawGrid(gc, 1000,600);
+
+        canvas.setOnMousePressed(event -> {
+            mouseX = event.getSceneX();
+            mouseY = event.getSceneY();
+        });
+
+        canvas.setOnMouseDragged(event -> {
+            double deltaX = event.getSceneX() - mouseX;
+            double deltaY = event.getSceneY() - mouseY;
+
+            translateX += deltaX;
+            translateY += deltaY;
+
+            canvas.setTranslateX(translateX);
+            canvas.setTranslateY(translateY);
+
+            mouseX = event.getSceneX();
+            mouseY = event.getSceneY();
+        });
+
+        canvas.setOnScroll((ScrollEvent event) -> {
+            double zoomFactor = event.getDeltaY() > 0 ? 1.1 : 0.9;
+            scaleFactor *= zoomFactor;
+
+            Scale scale = new Scale(zoomFactor, zoomFactor, event.getX(), event.getY());
+            canvas.getTransforms().add(scale);
+
+            event.consume();
+        });
+
+        Pane canvasPane = new StackPane(canvas);
+
+
+        VBox layout = getvBox();
+        HBox hBox = new HBox(10, layout, canvasPane);
+
+
+        hBox.setStyle("-fx-padding: 10;");
+        Scene scene = new Scene(hBox, 1000,600);
+
+        newWindow.setScene(scene);
+        newWindow.setMaximized(true);
+        newWindow.show();
+    }
+
+    private VBox getvBox() {
+        Button controllButton = new Button("Stop");
+        controllButton.setOnAction(e -> {
+            if(isSimulationRunning){
+                isSimulationRunning = false;
+                controllButton.setText("Continue");
             }
-
-            if (point != null) {
-                // Útvonalat jelző vonal létrehozása
-                Line line = new Line();
-                line.setStartX(robot.getCenterX());
-                line.setStartY(robot.getCenterY());
-                line.setEndX(robot.getCenterX());
-                line.setEndY(robot.getCenterY());
-                line.setStroke(robotColors[i % robotColors.length]);  // A vonal színe a robot színével megegyező
-                line.setStrokeWidth(2);
-
-                lines.add(line);
-                root.getChildren().add(line);
-
-                Timeline timeline = new Timeline();
-
-                // Animáljuk a robot X és Y pozícióit a célpont felé
-                KeyValue kvX = new KeyValue(robot.centerXProperty(), point.getCenterX());
-                KeyValue kvY = new KeyValue(robot.centerYProperty(), point.getCenterY());
-
-                // Animáljuk a vonal végpontját is a robot mozgásával együtt
-                KeyValue lineEndX = new KeyValue(line.endXProperty(), point.getCenterX());
-                KeyValue lineEndY = new KeyValue(line.endYProperty(), point.getCenterY());
-
-                // Kulcskeretek beállítása: 5 másodperc alatt érjék el a célpontokat
-                KeyFrame kf = new KeyFrame(Duration.seconds(5), kvX, kvY, lineEndX, lineEndY);
-
-                // Hozzáadjuk az animációs keretet
-                timeline.getKeyFrames().add(kf);
-
-                // Elindítjuk az animációt
-                timeline.play();
+            else{
+                isSimulationRunning = true;
+                controllButton.setText("Stop");
             }
+            System.out.println(isSimulationRunning);
+        });
+
+        Button resetButton = new Button("Reset");
+        resetButton.setVisible(isSimulationFinished);
+        VBox layout = new VBox(10, controllButton, resetButton);
+        return layout;
+    }
+
+    private void checkStates() {
+        if ((initialState != null && !initialState.trim().isEmpty()) && (targetState != null && !targetState.trim().isEmpty())) {
+            simulationStartButton.setDisable(false);
         }
     }
 
-    // Szimuláció újraindítása
-    private void resetSimulation(Pane root) {
-        // Töröljük a meglévő vonalakat
-        for (Line line : lines) {
-            root.getChildren().remove(line);
-        }
-        lines.clear();  // Kiürítjük a vonalakat tartalmazó listát
+    private void drawGrid(GraphicsContext gc, double width, double height) {
+        gc.clearRect(0, 0, width, height);
+        gc.setStroke(Color.BLUE);
+        gc.setLineWidth(0.5);
 
-        // Robotok visszahelyezése az eredeti pozícióba
-        for (int i = 0; i < robots.size(); i++) {
-            Circle robot = robots.get(i);
-            Circle startPoint = startPoints.get(i);
-            robot.setCenterX(startPoint.getCenterX());
-            robot.setCenterY(startPoint.getCenterY());
+        // Vízszintes vonalak
+        for (int i = 0; i < width; i += 20) {
+            gc.strokeLine(i, 0, i, height);
         }
 
-        // A simulationRunning állapot visszaállítása
-        simulationRunning = false;
+        // Függőleges vonalak
+        for (int i = 0; i < height; i += 20) {
+            gc.strokeLine(0, i, width, i);
+        }
     }
 
-    // Method to handle an event and display appropriate message
     public void handleEvent(SimulationEvent event) {
         if (event.isGlobalEvent()) {
             handleGlobalEvent(event);
