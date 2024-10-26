@@ -6,7 +6,7 @@ public class RobotOrientation extends ConfigurationOrientation {
     private Coordinate tailRobotPosition;
 
     public RobotOrientation(ConfigurationOrientation config, Coordinate selfPosition) {
-        super(config.getConfigurationBinaryString(), config.getOrientation(), config.isXMirrored());
+        super(config.getBinaryRepresentation(), config.getOrientation(), config.isXMirrored(), config.getWidth(), config.getHeight());
         this.selfPosition = selfPosition;
     }
 
@@ -20,5 +20,13 @@ public class RobotOrientation extends ConfigurationOrientation {
 
     public Coordinate getTailRobotPosition() {
         return tailRobotPosition;
+    }
+    
+    public void setHeadRobotPosition(Coordinate headRobotPosition) {
+        this.headRobotPosition = headRobotPosition;
+    }
+
+    public void setTailRobotPosition(Coordinate tailRobotPosition) {
+        this.tailRobotPosition = tailRobotPosition;
     }
 }

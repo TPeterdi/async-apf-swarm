@@ -87,7 +87,7 @@ public class Simulation {
     }
 
     private void moveRobotBy(int robotIndex, int dx, int dy) {
-        // No validation in exchange for speed (should only allow cardinal movements by 1)
+        // No validation in exchange for speed (we should only allow cardinal movements by 1)
         Coordinate currentCoordinate = currentConfiguration.get(robotIndex);
         int currentX = currentCoordinate.getX();
         int currentY = currentCoordinate.getY();
