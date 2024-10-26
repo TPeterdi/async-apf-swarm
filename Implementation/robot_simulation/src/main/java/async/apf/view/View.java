@@ -6,7 +6,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import java.util.Arrays;
 
 public class View extends Application implements IView {
     private ViewMethods viewMethods;
@@ -24,8 +23,8 @@ public class View extends Application implements IView {
         setTargetStateButton.setOnAction(e -> viewMethods.openTargetWindow());
         viewMethods.simulationStartButton.setOnAction(e -> {
             System.out.println("Simulation beginning...");
-            System.out.println("Initial state: " + Arrays.toString(viewMethods.initialStates.getFirst()));
-            System.out.println("Target state: " + Arrays.toString(viewMethods.targetStates.getFirst()));
+            System.out.println("Initial state: " + viewMethods.initialStates);
+            System.out.println("Target state: " + viewMethods.targetStates);
             viewMethods.isSimulationRunning = true;
             viewMethods.openSimulationWindow();
         });

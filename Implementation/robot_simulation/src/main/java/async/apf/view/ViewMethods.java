@@ -1,5 +1,5 @@
 package async.apf.view;
-
+import async.apf.model.Coordinate;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -32,40 +32,46 @@ public class ViewMethods {
     public Button simulationStartButton;
     public Boolean isSimulationRunning = false;
     public Boolean isSimulationFinished = false;
-    public final List<String[]> initialStates = new ArrayList<>();
-    public final List<String[]> targetStates = new ArrayList<>();
+    private final List<String[]> initialStatesTemp = new ArrayList<>();
+    private final List<String[]> targetStatesTemp = new ArrayList<>();
+    public final List<Coordinate> initialStates = new ArrayList<>();
+    public final List<Coordinate> targetStates = new ArrayList<>();
 
 
     public void openInitialWindow() {
         Stage newWindow = new Stage();
         newWindow.setTitle("Initial state");
 
-        Label label = new Label("Set the value (Give it separated with ';'): ");
+        Label label = new Label("Set the robots initial coordinates: ");
+        Label exampleLabel = new Label("For example 1,2;3,4 ");
+
         TextField textField = new TextField();
 
         Button importButton = new Button("Import from file (csv)");
         importButton.setOnAction(e -> {
-            openCsvFile(newWindow, initialStates);
+            openCsvFile(newWindow, initialStatesTemp);
+            stringToCoordinate(initialStatesTemp, initialStates);
             newWindow.close();
             checkStates();
         });
         //Button randomButton = new Button("Random");
 
         Button resetButton = new Button("Reset");
-        resetButton.setOnAction(e -> {initialStates.clear(); textField.clear(); checkStates();});
+        resetButton.setOnAction(e -> {initialStatesTemp.clear(); textField.clear(); checkStates();});
 
         Button closeButton = new Button("Close");
         closeButton.setOnAction(e -> newWindow.close());
 
         Button confirmButton = new Button("Confirm");
         confirmButton.setOnAction(e -> {
-                    initialStates.add(textField.getText().split(";"));
+                    initialStatesTemp.add(textField.getText().split(";"));
+                    stringToCoordinate(initialStatesTemp, initialStates);
                     newWindow.close();
                     checkStates();
                 }
         );
 
-        VBox layout = new VBox(10, label, textField, importButton, resetButton, closeButton, confirmButton);
+        VBox layout = new VBox(10, label, exampleLabel, textField, importButton, resetButton, closeButton, confirmButton);
         Scene scene = new Scene(layout, 400, 500);
 
         newWindow.setScene(scene);
@@ -76,12 +82,14 @@ public class ViewMethods {
         Stage newWindow = new Stage();
         newWindow.setTitle("Target state");
 
-        Label label = new Label("Set the value (Give it separated with ';'):");
+        Label label = new Label("Set the robots target coordinates: ");
+        Label exampleLabel = new Label("For example 1,2;3,4 ");
         TextField textField = new TextField();
 
         Button importButton = new Button("Import from file (csv)");
         importButton.setOnAction(e -> {
-            openCsvFile(newWindow, targetStates);
+            openCsvFile(newWindow, targetStatesTemp);
+            stringToCoordinate(targetStatesTemp, targetStates);
             newWindow.close();
             checkStates();
         });
@@ -89,20 +97,22 @@ public class ViewMethods {
         //Button randomButton = new Button("Random");
 
         Button resetButton = new Button("Reset");
-        resetButton.setOnAction(e -> {targetStates.clear(); textField.clear(); checkStates();});
+        resetButton.setOnAction(e -> {
+            targetStatesTemp.clear(); textField.clear(); checkStates();});
 
         Button closeButton = new Button("Close");
         closeButton.setOnAction(e -> {newWindow.close();});
 
         Button confirmButton = new Button("Confirm");
         confirmButton.setOnAction(e -> {
-                    targetStates.add(textField.getText().split(";"));
+                    targetStatesTemp.add(textField.getText().split(";"));
+                    stringToCoordinate(targetStatesTemp, targetStates);
                     newWindow.close();
                     checkStates();
                 }
         );
 
-        VBox layout = new VBox(10, label, textField, importButton, resetButton, closeButton, confirmButton);
+        VBox layout = new VBox(10, label, exampleLabel, textField, importButton, resetButton, closeButton, confirmButton);
         Scene scene = new Scene(layout, 400, 500);
 
         newWindow.setScene(scene);
@@ -179,13 +189,13 @@ public class ViewMethods {
     }
 
 
-    public void checkStates() {
-        if (!(initialStates.isEmpty()) && !(targetStates.isEmpty())) {
+    private void checkStates() {
+        if (!(initialStatesTemp.isEmpty()) && !(targetStatesTemp.isEmpty())) {
             simulationStartButton.setDisable(false);
         }
     }
 
-    public void drawGrid(GraphicsContext gc, double width, double height) {
+    private void drawGrid(GraphicsContext gc, double width, double height) {
         gc.clearRect(0, 0, width, height);
         gc.setStroke(Color.BLUE);
         gc.setLineWidth(0.5);
@@ -201,7 +211,7 @@ public class ViewMethods {
         }
     }
 
-    public void openCsvFile(Stage stage, List<String[]> array){
+    private void openCsvFile(Stage stage, List<String[]> array){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose a CSV file");
 
@@ -214,7 +224,7 @@ public class ViewMethods {
         }
     }
 
-    public void loadCsvData(File file, List<String[]> array) {
+    private void loadCsvData(File file, List<String[]> array) {
         array.clear();
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
@@ -228,6 +238,20 @@ public class ViewMethods {
         } catch (IOException e) {
             System.out.println("Something wrong happened during file read: " + e.getMessage());
         }
+    }
 
+    private void stringToCoordinate(List<String[]> from, List<Coordinate> to){
+        for (String[] row : from) {
+            for (String entry : row) {
+                String[] parts = entry.split(",");
+                int x = Integer.parseInt(parts[0].trim());
+                int y = Integer.parseInt(parts[1].trim());
+                to.add(new Coordinate(x, y));
+            }
+        }
+
+        for (Coordinate coord : to) {
+            System.out.println("X: " + coord.getX() + ", Y: " + coord.getY());
+        }
     }
 }
