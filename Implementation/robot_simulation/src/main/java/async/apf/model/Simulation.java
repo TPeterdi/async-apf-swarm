@@ -60,6 +60,7 @@ public class Simulation implements IEventListener {
                 try {
                     pickedRobot.activate(randomIndex);
                 } catch (Exception ex) {
+                    System.err.println(ex.getMessage());
                 }
             }
         });

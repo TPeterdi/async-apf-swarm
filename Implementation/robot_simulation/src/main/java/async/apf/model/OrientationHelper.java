@@ -1,7 +1,6 @@
 package async.apf.model;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -151,12 +150,12 @@ public final class OrientationHelper {
                     width,
                     height);
                 
-                return findOrientationWithLargestLexographicBinaryString(Arrays.asList(
+                return findOrientationWithLargestLexographicBinaryString(new ArrayList<>(List.of(
                     lamABOrientation,
                     lamBAOrientation,
                     lamCDOrientation,
                     lamDCOrientation
-                ));
+                )));
             }
             // width == height (square) && width > 1
             else {
@@ -225,7 +224,7 @@ public final class OrientationHelper {
                     width,
                     height);
                 
-                return findOrientationWithLargestLexographicBinaryString(Arrays.asList(
+                return findOrientationWithLargestLexographicBinaryString(new ArrayList<>(List.of(
                     lamABOrientation,
                     lamBAOrientation,
                     lamADOrientation,
@@ -234,7 +233,7 @@ public final class OrientationHelper {
                     lamCBOrientation,
                     lamDCOrientation,
                     lamCDOrientation
-                ));
+                )));
             }
         }
         // width == 1
@@ -256,10 +255,10 @@ public final class OrientationHelper {
                 width,
                 height);
             
-            return findOrientationWithLargestLexographicBinaryString(Arrays.asList(
+            return findOrientationWithLargestLexographicBinaryString(new ArrayList<>(List.of(
                 lamABOrientation,
                 lamBAOrientation
-            ));
+            )));
         }
     }
 
@@ -293,7 +292,7 @@ public final class OrientationHelper {
             : (bottomToTop == flip ? height - inner - 1 : inner);
     }
     
-    private static ConfigurationOrientation findOrientationWithLargestLexographicBinaryString(List<ConfigurationOrientation> orientations) {
+    private static ConfigurationOrientation findOrientationWithLargestLexographicBinaryString(ArrayList<ConfigurationOrientation> orientations) {
         if (orientations == null || orientations.isEmpty()) {
             throw new IllegalArgumentException("The input array cannot be null or empty.");
         }
@@ -326,7 +325,7 @@ public final class OrientationHelper {
 
         int midX = (minX + maxX) / 2;
         int midY = (minY + maxY) / 2;
-        
+
         return hasVerticalSymmetry(coords, midX)
             || hasHorizontalSymmetry(coords, midY)
             || hasDiagonalSymmetry1(coords, midX, midY)

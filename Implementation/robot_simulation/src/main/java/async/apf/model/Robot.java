@@ -11,7 +11,7 @@ import async.apf.model.events.RobotEvent;
 
 public class Robot {
     private final EventEmitter globalEventEmitter;
-    private final Thread cycleThread;
+    private Thread cycleThread;
 
     private boolean active = false;
     private int currentId;
@@ -27,14 +27,27 @@ public class Robot {
 
     public Robot(EventEmitter globalEventEmitter) {
         this.globalEventEmitter = globalEventEmitter;
+        this.resetCycle();
+    }
 
+    public void activate(int currentId) {
+        if (this.active) {
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
+            return;
+        }
+        this.active = true;
+        this.currentId = currentId;
+        this.cycleThread.start();
+    }
+
+    public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
+        this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
+        this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
+        lookLatch.countDown();
+    }
+
+    private void resetCycle() {
         this.cycleThread = new Thread(() -> {
-            if (this.active) {
-                this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
-                return;
-            }
-    
-            this.active = true;
             this.lookLatch = new CountDownLatch(1);
     
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
@@ -71,19 +84,10 @@ public class Robot {
     
             this.nextMove = null;
             this.currentConfiguration = null;
+            this.active = false;
+            this.resetCycle();
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentId));
         });
-    }
-
-    public void activate(int currentId) {
-        this.currentId = currentId;
-        this.cycleThread.start();
-    }
-
-    public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
-        this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
-        this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
-        lookLatch.countDown();
     }
 
     // C = C_target

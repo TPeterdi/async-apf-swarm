@@ -1,13 +1,13 @@
 package async.apf.model.events;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import async.apf.interfaces.IEvent;
 import async.apf.interfaces.IEventListener;
 
 public class EventEmitter {
-    private final List<IEventListener> listeners = new ArrayList<>();
+    private final List<IEventListener> listeners = new CopyOnWriteArrayList<>();
 
     // Method to add an event listener
     public void addEventListener(IEventListener listener) {
