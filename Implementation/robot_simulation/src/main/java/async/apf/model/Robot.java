@@ -2,15 +2,19 @@ package async.apf.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 import async.apf.model.enums.Cardinal;
 import async.apf.model.enums.RobotEventType;
+import async.apf.model.events.EventEmitter;
 import async.apf.model.events.RobotEvent;
 
 public class Robot {
+    private final EventEmitter globalEventEmitter;
+    private final Thread cycleThread;
+
     private boolean active = false;
+    private int currentId;
 
     // Prevents COMPUTE cycle to start ahead of time
     private CountDownLatch lookLatch;
@@ -19,61 +23,61 @@ public class Robot {
     private RobotOrientation currentConfiguration;
     private ConfigurationOrientation targetPattern;
 
-
     private Cardinal nextMove = null;
 
-    public CompletableFuture<RobotEvent> activate() {
-        if (this.active) return CompletableFuture.completedFuture(new RobotEvent(RobotEventType.ACTIVE));
+    public Robot(EventEmitter globalEventEmitter) {
+        this.globalEventEmitter = globalEventEmitter;
 
-        this.active = true;
-        this.lookLatch = new CountDownLatch(1);
-        // LOOK
-        return CompletableFuture.supplyAsync(() -> {
-            return new RobotEvent(RobotEventType.LOOK);
-        })
-        // SIGNAL COMPUTE
-        .thenCompose(event ->
-            CompletableFuture.supplyAsync(() -> {
-                try {
-                    lookLatch.await();
-
-                    return new RobotEvent(RobotEventType.COMPUTE);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            })
-        )
-        // CARRY OUT COMPUTE AND SIGNAL MOVE
-        .thenCompose(event ->
-            CompletableFuture.supplyAsync(() -> {
-                computeNextMove();
+        this.cycleThread = new Thread(() -> {
+            if (this.active) {
+                this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
+                return;
+            }
+    
+            this.active = true;
+            this.lookLatch = new CountDownLatch(1);
+    
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
+    
+            try {
+                lookLatch.await();
+            } catch (Exception e) {
+                return;
+            }
+    
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.COMPUTE, this.currentId));
+    
+            computeNextMove();
+            if (this.nextMove == null) {
+                this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.STAY_PUT, this.currentId));
+            }
+            else {
                 switch (this.nextMove) {
                     case NORTH -> {
-                        return new RobotEvent(RobotEventType.MOVE_NORTH);
+                        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_NORTH, this.currentId));
                     }
                     case EAST -> {
-                        return new RobotEvent(RobotEventType.MOVE_EAST);
+                        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_EAST, this.currentId));
                     }
                     case SOUTH -> {
-                        return new RobotEvent(RobotEventType.MOVE_SOUTH);
+                        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_SOUTH, this.currentId));
                     }
                     case WEST -> {
-                        return new RobotEvent(RobotEventType.MOVE_WEST);
+                        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_WEST, this.currentId));
                     }
                     default -> throw new AssertionError();
                 }
-            })
-        )
-        // IDLE
-        .thenCompose(event -> 
-            CompletableFuture.supplyAsync(() -> {
-                this.nextMove = null;
-                this.currentConfiguration = null;
-                return new RobotEvent(RobotEventType.IDLE);
-            })
-        );
+            }
+    
+            this.nextMove = null;
+            this.currentConfiguration = null;
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentId));
+        });
+    }
+
+    public void activate(int currentId) {
+        this.currentId = currentId;
+        this.cycleThread.start();
     }
 
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
@@ -219,7 +223,9 @@ public class Robot {
         )
         // PHASE I
         {
-
+            if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
+                this.nextMove = Cardinal.NORTH;
+            }
         }
         else if (
             (

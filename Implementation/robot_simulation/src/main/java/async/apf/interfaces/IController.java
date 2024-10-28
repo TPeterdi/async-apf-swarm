@@ -11,5 +11,5 @@ public interface IController extends IEventListener {
     void setTargetPattern(List<Coordinate> targetPattern);
     void displayEvent(SimulationEvent event);
     void startSimulation() throws Exception;
-    boolean isSimulationRunning();
+    void stopSimulation();
 }

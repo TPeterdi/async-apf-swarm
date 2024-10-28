@@ -40,7 +40,15 @@ public class Model implements IModel {
         this.isSimulationRunning = true;
         
         this.currentSimulation = new Simulation(this.simulationEventEmitter, this.loadedStartingConfiguration, this.loadedTargetPattern);
+        this.simulationEventEmitter.addEventListener(this.currentSimulation);
         this.currentSimulation.start();
+    }
+    @Override
+    public void stopSimulation() {
+        if (this.currentSimulation == null) return;
+        if (!this.isSimulationRunning) return;
+
+        this.currentSimulation.stop();
     }
 
     @Override

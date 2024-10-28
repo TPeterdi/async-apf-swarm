@@ -2,14 +2,14 @@ package async.apf.view;
 import async.apf.controller.Controller;
 import async.apf.interfaces.IController;
 import async.apf.interfaces.IModel;
+import async.apf.interfaces.IView;
 import async.apf.model.Model;
 import async.apf.model.events.EventEmitter;
 import async.apf.model.events.SimulationEvent;
-import async.apf.interfaces.IView;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.layout.*;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 
@@ -21,7 +21,6 @@ public class View extends Application implements IView {
         IModel model            = new Model(this.globalEventEmitter);
         IController controller  = new Controller(model, this);
         this.globalEventEmitter.addEventListener(controller);
-
     }
 
     @Override

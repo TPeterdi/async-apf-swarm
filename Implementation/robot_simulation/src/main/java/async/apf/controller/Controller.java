@@ -47,17 +47,16 @@ public class Controller implements IController {
         this.model.startSimulation();
     }
 
-    //TODO Implement SimulationStop
-
     @Override
-    public boolean isSimulationRunning() {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void stopSimulation() {
+        this.model.stopSimulation();
     }
 
     @Override
-    public void onEvent(IEvent event) throws Exception {
-        if (event instanceof SimulationEvent simulationEvent)
+    public void onEvent(IEvent event) {
+        if (event instanceof SimulationEvent simulationEvent) {
             this.displayEvent(simulationEvent);
+        }
         else if (event instanceof viewCoordinatesEvent viewCoordinatesEvent) {
             switch (viewCoordinatesEvent.getEventType()) {
                 case LOAD_INITIAL_CONFIG -> setStartingConfiguration(viewCoordinatesEvent.getCoordinates());
@@ -66,12 +65,18 @@ public class Controller implements IController {
                         throw new IllegalStateException("Unexpected event type: " + viewCoordinatesEvent.getEventType());
             }
         }
-        else if (event instanceof viewSimulationEvent viewSimulationEvent){
-           switch (viewSimulationEvent.getEventType()) {
-               case SIMULATION_START -> startSimulation();
-               // TODO case SIMULATION_STOP ->
-               default -> throw new IllegalStateException("Unexpected event type: " + viewSimulationEvent.getEventType());
-           }
+        else if (event instanceof viewSimulationEvent viewSimulationEvent) {
+            switch (viewSimulationEvent.getEventType()) {
+                case SIMULATION_START -> {
+                    try {
+                        startSimulation();
+                    } catch (Exception e) {
+                        System.err.println(e.getMessage());
+                    }
+                }
+                case SIMULATION_STOP  -> stopSimulation();
+                default -> throw new IllegalStateException("Unexpected event type: " + viewSimulationEvent.getEventType());
+            }
         }
     }
 }
