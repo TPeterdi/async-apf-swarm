@@ -1,4 +1,9 @@
 package async.apf.view;
+import async.apf.controller.Controller;
+import async.apf.interfaces.IController;
+import async.apf.interfaces.IModel;
+import async.apf.model.Model;
+import async.apf.model.events.EventEmitter;
 import async.apf.model.events.SimulationEvent;
 import async.apf.interfaces.IView;
 import javafx.application.Application;
@@ -7,12 +12,21 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+
 public class View extends Application implements IView {
-    private ViewMethods viewMethods;
+    public ViewMethods viewMethods;
+    EventEmitter globalEventEmitter = new EventEmitter();
+
+    public View(){
+        IModel model            = new Model(this.globalEventEmitter);
+        IController controller  = new Controller(model, this);
+        this.globalEventEmitter.addEventListener(controller);
+
+    }
 
     @Override
     public void start(Stage primaryStage) {
-        viewMethods = new ViewMethods();
+        viewMethods = new ViewMethods(globalEventEmitter);
 
         Button setInitialStateButton = new Button("Set initial state");
         Button setTargetStateButton = new Button("Set target state");
@@ -25,7 +39,6 @@ public class View extends Application implements IView {
             System.out.println("Simulation beginning...");
             System.out.println("Initial state: " + viewMethods.initialStates);
             System.out.println("Target state: " + viewMethods.targetStates);
-            viewMethods.isSimulationRunning = true;
             viewMethods.openSimulationWindow();
         });
 
@@ -51,6 +64,8 @@ public class View extends Application implements IView {
     private void handleGlobalEvent(SimulationEvent event) {
         switch (event.getEventType()) {
             case SIMULATION_START:
+                //TODO QUEUE
+                //Queue eventQueues = new PriorityQueue();
                 System.out.println("View: Simulation has started!");
                 break;
             case SIMULATION_END:
@@ -71,6 +86,7 @@ public class View extends Application implements IView {
                 System.out.println("View: Robot " + event.getRobotId() + " is computing data.");
                 break;
             case ROBOT_MOVING:
+                // Listában robotokat tárolni, amelyik x && y-e fromX && Y-el megegyezik, frissíteni a helyét
                 System.out.println("View: Robot " + event.getRobotId() + " is moving from (" +
                         event.getFromX() + "," + event.getFromY() + ") to (" +
                         event.getToX() + "," + event.getToY() + ").");

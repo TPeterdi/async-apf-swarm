@@ -15,7 +15,7 @@ public class EventEmitter {
     }
 
     // Method to emit an event
-    public void emitEvent(IEvent event) {
+    public void emitEvent(IEvent event) throws Exception {
         // Notify all listeners about the event
         for (IEventListener listener : listeners) {
             listener.onEvent(event);

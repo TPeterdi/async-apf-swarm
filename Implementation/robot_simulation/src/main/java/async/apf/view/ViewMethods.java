@@ -1,5 +1,9 @@
 package async.apf.view;
 import async.apf.model.Coordinate;
+import async.apf.model.events.EventEmitter;
+import async.apf.view.enums.viewEventType;
+import async.apf.view.events.viewCoordinatesEvent;
+import async.apf.view.events.viewSimulationEvent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -36,7 +40,11 @@ public class ViewMethods {
     private final List<String[]> targetStatesTemp = new ArrayList<>();
     public final List<Coordinate> initialStates = new ArrayList<>();
     public final List<Coordinate> targetStates = new ArrayList<>();
+    private EventEmitter simulationEventEmitter;
 
+    public ViewMethods(EventEmitter simulationEventEmitter) {
+        this.simulationEventEmitter = simulationEventEmitter;
+    }
 
     public void openInitialWindow() {
         Stage newWindow = new Stage();
@@ -52,6 +60,11 @@ public class ViewMethods {
             openCsvFile(newWindow, initialStatesTemp);
             stringToCoordinate(initialStatesTemp, initialStates);
             newWindow.close();
+            try {
+                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_INITIAL_CONFIG, initialStates));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
             checkStates();
         });
         //Button randomButton = new Button("Random");
@@ -67,7 +80,12 @@ public class ViewMethods {
                     initialStatesTemp.add(textField.getText().split(";"));
                     stringToCoordinate(initialStatesTemp, initialStates);
                     newWindow.close();
-                    checkStates();
+            try {
+                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_INITIAL_CONFIG, initialStates));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            checkStates();
                 }
         );
 
@@ -91,6 +109,11 @@ public class ViewMethods {
             openCsvFile(newWindow, targetStatesTemp);
             stringToCoordinate(targetStatesTemp, targetStates);
             newWindow.close();
+            try {
+                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_TARGET_CONFIG, targetStates));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
             checkStates();
         });
 
@@ -108,7 +131,12 @@ public class ViewMethods {
                     targetStatesTemp.add(textField.getText().split(";"));
                     stringToCoordinate(targetStatesTemp, targetStates);
                     newWindow.close();
-                    checkStates();
+            try {
+                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_TARGET_CONFIG, targetStates));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            checkStates();
                 }
         );
 
@@ -170,14 +198,24 @@ public class ViewMethods {
     }
 
     private VBox getvBox() {
-        Button controllButton = new Button("Stop");
+        Button controllButton = new Button("Start");
         controllButton.setOnAction(e -> {
             if(isSimulationRunning){
                 isSimulationRunning = false;
+                try {
+                    simulationEventEmitter.emitEvent(new viewSimulationEvent(viewEventType.SIMULATION_STOP));
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
                 controllButton.setText("Continue");
             }
             else{
                 isSimulationRunning = true;
+                try {
+                    simulationEventEmitter.emitEvent(new viewSimulationEvent(viewEventType.SIMULATION_START));
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
                 controllButton.setText("Stop");
             }
             System.out.println(isSimulationRunning);

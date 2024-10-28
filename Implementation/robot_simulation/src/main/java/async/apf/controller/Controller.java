@@ -9,6 +9,8 @@ import async.apf.interfaces.IView;
 import async.apf.model.Coordinate;
 import async.apf.model.events.SimulationEvent;
 import async.apf.view.View;
+import async.apf.view.events.viewCoordinatesEvent;
+import async.apf.view.events.viewSimulationEvent;
 import javafx.application.Application;
 
 public class Controller implements IController {
@@ -45,14 +47,31 @@ public class Controller implements IController {
         this.model.startSimulation();
     }
 
+    //TODO Implement SimulationStop
+
     @Override
     public boolean isSimulationRunning() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public void onEvent(IEvent event) {
+    public void onEvent(IEvent event) throws Exception {
         if (event instanceof SimulationEvent simulationEvent)
             this.displayEvent(simulationEvent);
+        else if (event instanceof viewCoordinatesEvent viewCoordinatesEvent) {
+            switch (viewCoordinatesEvent.getEventType()) {
+                case LOAD_INITIAL_CONFIG -> setStartingConfiguration(viewCoordinatesEvent.getCoordinates());
+                case LOAD_TARGET_CONFIG -> setTargetPattern(viewCoordinatesEvent.getCoordinates());
+                default ->
+                        throw new IllegalStateException("Unexpected event type: " + viewCoordinatesEvent.getEventType());
+            }
+        }
+        else if (event instanceof viewSimulationEvent viewSimulationEvent){
+           switch (viewSimulationEvent.getEventType()) {
+               case SIMULATION_START -> startSimulation();
+               // TODO case SIMULATION_STOP ->
+               default -> throw new IllegalStateException("Unexpected event type: " + viewSimulationEvent.getEventType());
+           }
+        }
     }
 }

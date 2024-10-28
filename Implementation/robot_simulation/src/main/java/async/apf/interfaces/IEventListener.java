@@ -1,5 +1,5 @@
 package async.apf.interfaces;
 
 public interface IEventListener {
-    void onEvent(IEvent event);
+    void onEvent(IEvent event) throws Exception;
 }

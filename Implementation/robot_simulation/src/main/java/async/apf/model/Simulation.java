@@ -57,36 +57,35 @@ public class Simulation {
             pickedRobot.activate().thenAccept(robotEvent -> {
                 RobotEventType eventType = robotEvent.getEventType();
                 if (null != eventType)
-                    switch (eventType) {
-                    case ACTIVE -> {return;}
-                    case STAY_PUT -> {return;}
-                    case LOOK ->
-                    {
-                        globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_LOOKING));
-
-                        Coordinate robotLocation = currentConfiguration.get(nextRobotIndex);
-                        pickedRobot.supplyConfigurations(translateConfigurationToRobotsCoordinate(robotLocation), this.targetPattern);
-                    }
-                    case COMPUTE ->
-                        globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_COMPUTING));
-                    case MOVE_NORTH ->
-                        moveRobotBy(nextRobotIndex, 0, 1);
-                    case MOVE_EAST ->
-                        moveRobotBy(nextRobotIndex, 1, 0);
-                    case MOVE_SOUTH ->
-                        moveRobotBy(nextRobotIndex, 0, -1);
-                    case MOVE_WEST ->
-                        moveRobotBy(nextRobotIndex, -1, 0);
-                    case IDLE ->
-                        globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_IDLE));
-                    default ->
-                        throw new IllegalArgumentException("Unexpected value: " + eventType);
+                    try {
+                        switch (eventType) {
+                            case ACTIVE -> {
+                                return;
+                            }
+                            case STAY_PUT -> {
+                                return;
+                            }
+                            case LOOK -> {
+                                globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_LOOKING));
+                                Coordinate robotLocation = currentConfiguration.get(nextRobotIndex);
+                                pickedRobot.supplyConfigurations(translateConfigurationToRobotsCoordinate(robotLocation), this.targetPattern);
+                            }
+                            case COMPUTE -> globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_COMPUTING));
+                            case MOVE_NORTH -> moveRobotBy(nextRobotIndex, 0, 1);
+                            case MOVE_EAST -> moveRobotBy(nextRobotIndex, 1, 0);
+                            case MOVE_SOUTH -> moveRobotBy(nextRobotIndex, 0, -1);
+                            case MOVE_WEST -> moveRobotBy(nextRobotIndex, -1, 0);
+                            case IDLE -> globalEmitter.emitEvent(new SimulationEvent(nextRobotIndex, SimulationEventType.ROBOT_IDLE));
+                            default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
             });
         }
     }
 
-    private void moveRobotBy(int robotIndex, int dx, int dy) {
+    private void moveRobotBy(int robotIndex, int dx, int dy) throws Exception {
         // No validation in exchange for speed (we should only allow cardinal movements by 1)
         Coordinate currentCoordinate = currentConfiguration.get(robotIndex);
         int currentX = currentCoordinate.getX();
