@@ -2,7 +2,9 @@ package async.apf.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import async.apf.model.enums.Cardinal;
@@ -21,13 +23,10 @@ public final class OrientationHelper {
             }
         }
 
-        RobotOrientation orientation = new RobotOrientation(orientPattern(configuration), selfPosition);
-        findHeadAndTailCoordinates(orientation);
-
-        return orientation;
+        return new RobotOrientation(orientConfiguration(configuration), selfPosition);
     }
 
-    public static ConfigurationOrientation orientPattern(List<Coordinate> configuration) {
+    public static ConfigurationOrientation orientConfiguration(List<Coordinate> configuration) {
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
@@ -93,35 +92,13 @@ public final class OrientationHelper {
         return orientation;
     }
 
-    private static void findHeadAndTailCoordinates(RobotOrientation orientation) {
-        List<Boolean> binaryValue = orientation.getBinaryRepresentation();
-        Coordinate headCoordinate = null;
-        Coordinate tailCoordinate = null;
-        int index = 0;
-        int binaryLength = binaryValue.size();
-
-        while (index < binaryLength && (headCoordinate == null || tailCoordinate == null)) {
-            if (headCoordinate == null && Boolean.TRUE.equals(binaryValue.get(index))) {
-                int y = binaryLength / orientation.getWidth();
-                int rem = binaryLength % orientation.getWidth();
-                int x = y % 2 == 0
-                    ? orientation.getWidth() - rem - 1
-                    : rem;
-                headCoordinate = new Coordinate(x, y);
-            }
-            if (tailCoordinate == null && Boolean.TRUE.equals(binaryValue.get(binaryLength - index - 1))) {
-                int y = binaryLength / orientation.getWidth();
-                int rem = binaryLength % orientation.getWidth();
-                int x = y % 2 == 0
-                    ? orientation.getWidth() - rem - 1
-                    : rem;
-                tailCoordinate = new Coordinate(orientation.getWidth() - x - 1, orientation.getHeight() - y - 1);
-            }
-            index++;
-        }
-
-        orientation.setHeadRobotPosition(headCoordinate);
-        orientation.setTailRobotPosition(tailCoordinate);
+    public static Coordinate determineCoordinateFromIndex(int index, int width) {
+        int y = index / width;
+        int rem = index % width;
+        int x = y % 2 == 0
+            ? width - rem - 1
+            : rem;
+        return new Coordinate(x, y);
     }
 
     private static Boolean[][] initializePositionMatrix(int width, int height, List<Coordinate> configuration) {
@@ -337,5 +314,63 @@ public final class OrientationHelper {
         }
 
         return orientations.get(0);
+    }
+
+    public static boolean isSymmetric(List<Coordinate> coordinates) {
+        Set<Coordinate> coords = new HashSet<>(coordinates);
+        
+        int minX = coordinates.stream().mapToInt(Coordinate::getX).min().orElse(0);
+        int maxX = coordinates.stream().mapToInt(Coordinate::getX).max().orElse(0);
+        int minY = coordinates.stream().mapToInt(Coordinate::getY).min().orElse(0);
+        int maxY = coordinates.stream().mapToInt(Coordinate::getY).max().orElse(0);
+
+        int midX = (minX + maxX) / 2;
+        int midY = (minY + maxY) / 2;
+        
+        return hasVerticalSymmetry(coords, midX)
+            || hasHorizontalSymmetry(coords, midY)
+            || hasDiagonalSymmetry1(coords, midX, midY)
+            || hasDiagonalSymmetry2(coords, midX, midY)
+            || has180DegreeRotationSymmetry(coords, midX, midY);
+    }
+
+    public static boolean hasVerticalSymmetry(Set<Coordinate> coords, int midX) {
+        for (Coordinate coord : coords) {
+            Coordinate mirrored = new Coordinate(2 * midX - coord.getX(), coord.getY());
+            if (!coords.contains(mirrored)) return false;
+        }
+        return true;
+    }
+
+    public static boolean hasHorizontalSymmetry(Set<Coordinate> coords, int midY) {
+        for (Coordinate coord : coords) {
+            Coordinate mirrored = new Coordinate(coord.getX(), 2 * midY - coord.getY());
+            if (!coords.contains(mirrored)) return false;
+        }
+        return true;
+    }
+
+    public static boolean hasDiagonalSymmetry1(Set<Coordinate> coords, int midX, int midY) {
+        for (Coordinate coord : coords) {
+            Coordinate mirrored = new Coordinate(midX - (coord.getY() - midY), midY - (midX - coord.getX()));
+            if (!coords.contains(mirrored)) return false;
+        }
+        return true;
+    }
+
+    public static boolean hasDiagonalSymmetry2(Set<Coordinate> coords, int midX, int midY) {
+        for (Coordinate coord : coords) {
+            Coordinate mirrored = new Coordinate(midX + (coord.getY() - midY), midY + (midX - coord.getX()));
+            if (!coords.contains(mirrored)) return false;
+        }
+        return true;
+    }
+
+    public static boolean has180DegreeRotationSymmetry(Set<Coordinate> coords, int midX, int midY) {
+        for (Coordinate coord : coords) {
+            Coordinate rotated = new Coordinate(2 * midX - coord.getX(), 2 * midY - coord.getY());
+            if (!coords.contains(rotated)) return false;
+        }
+        return true;
     }
 }
