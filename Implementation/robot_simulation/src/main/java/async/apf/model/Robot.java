@@ -31,15 +31,11 @@ public class Robot {
         return CompletableFuture.supplyAsync(() -> {
             return new RobotEvent(RobotEventType.LOOK);
         })
-        // COMPUTE
+        // SIGNAL COMPUTE
         .thenCompose(event ->
             CompletableFuture.supplyAsync(() -> {
                 try {
                     lookLatch.await();
-
-                    // TODO: Do actual computation
-                    Thread.sleep((long) (Math.random() * 1000));
-                    this.nextMove = Cardinal.EAST;
 
                     return new RobotEvent(RobotEventType.COMPUTE);
                 }
@@ -49,9 +45,10 @@ public class Robot {
                 return null;
             })
         )
-        // MOVE
+        // CARRY OUT COMPUTE AND SIGNAL MOVE
         .thenCompose(event ->
             CompletableFuture.supplyAsync(() -> {
+                computeNextMove();
                 switch (this.nextMove) {
                     case NORTH -> {
                         return new RobotEvent(RobotEventType.MOVE_NORTH);
@@ -205,5 +202,102 @@ public class Robot {
             }
         }
         return true;
+    }
+
+    private void computeNextMove() {
+        if (
+            !(
+                checkC4() &&
+                checkC5() &&
+                checkC6()
+            )
+            &&
+            !(
+                checkC1() &&
+                checkC3()
+            )
+        )
+        // PHASE I
+        {
+
+        }
+        else if (
+            (
+                checkC4() &&
+                checkC5() &&
+                checkC6() &&
+                !checkC8()
+            )
+            &&
+            (
+                (
+                    checkC2() &&
+                    checkC3()
+                )
+                ||
+                !checkC2()
+            )
+        )
+        // PHASE II
+        {
+
+        }
+        else if (
+            checkC4() &&
+            checkC5() &&
+            checkC6() &&
+            checkC8() &&
+            !checkC2() &&
+            !checkC7()
+        )
+        // PHASE III
+        {
+            
+        }
+        else if (
+            checkC4() &&
+            checkC5() &&
+            checkC6() &&
+            checkC7() &&
+            checkC8() &&
+            !checkC2()
+        )
+        // PHASE IV
+        {
+            
+        }
+        else if (
+            checkC2() &&
+            checkC4() &&
+            checkC5() &&
+            checkC6() &&
+            checkC8() &&
+            !checkC3()
+        )
+        // PHASE V
+        {
+            
+        }
+        else if (
+            !checkC1() &&
+            checkC2() &&
+            checkC3() &&
+            checkC4() &&
+            checkC5() &&
+            checkC6()
+        )
+        // PHASE VI
+        {
+            
+        }
+        else if (
+            !checkC0() &&
+            checkC1() &&
+            checkC3()
+        )
+        // PHASE VII
+        {
+            
+        }
     }
 }
