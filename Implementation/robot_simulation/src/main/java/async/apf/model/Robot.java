@@ -227,6 +227,7 @@ public class Robot {
         )
         // PHASE I
         {
+            // TAIL moves up
             if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
                 this.nextMove = Cardinal.NORTH;
             }
@@ -250,7 +251,10 @@ public class Robot {
         )
         // PHASE II
         {
-
+            // HEAD moves left
+            if (currentConfiguration.getHeadPosition().equals(currentConfiguration.getSelfPosition())) {
+                this.nextMove = Cardinal.WEST;
+            }
         }
         else if (
             checkC4() &&
@@ -262,7 +266,36 @@ public class Robot {
         )
         // PHASE III
         {
-            
+            // The aim of this phase is to make C7 true
+            if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
+                if (checkC10()) {
+                    // TAIL moves left or upwards in accordance with
+                    // m > n + 1 or m = n + 1
+                    if (currentConfiguration.getHeight() > currentConfiguration.getWidth() + 1) {
+                        this.nextMove = Cardinal.WEST;
+                    }
+                    else {
+                        this.nextMove = Cardinal.NORTH;
+                    }
+                }
+                else {
+                    if (checkC9()) {
+                        // TAIL moves right or upwards in accordance with
+                        // m > n + 1 or m = n + 1
+                        // (dimension of the current SER is m × n with m ≥ n)
+                        if (currentConfiguration.getHeight() > currentConfiguration.getWidth() + 1) {
+                            this.nextMove = Cardinal.EAST;
+                        }
+                        else {
+                            this.nextMove = Cardinal.NORTH;
+                        }
+                    }
+                    else {
+                        // TAIL moves up
+                        this.nextMove = Cardinal.NORTH;
+                    }
+                }
+            }
         }
         else if (
             checkC4() &&
@@ -274,7 +307,7 @@ public class Robot {
         )
         // PHASE IV
         {
-            
+            rearrange();
         }
         else if (
             checkC2() &&
@@ -286,7 +319,44 @@ public class Robot {
         )
         // PHASE V
         {
-            
+            // TAIL moves horizontally to make C3 true
+            if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
+                if (checkC10()) {
+                    int maxX = Integer.MIN_VALUE;
+
+                    // Iterate through the list except the last element
+                    for (int i = 0; i < currentConfiguration.getCoordinates().size() - 1; i++) {
+                        Coordinate p = currentConfiguration.getCoordinates().get(i);
+                        maxX = Math.max(maxX, p.getX());
+                    }
+                    int tPrimeX = targetPattern.getTailPosition().getX();
+                    int tX = currentConfiguration.getTailPosition().getX();
+                    int cPrimePrimeX = maxX;
+                    int eX = maxX / 2;
+
+                    if ((tX > cPrimePrimeX && tPrimeX > cPrimePrimeX) ||
+                        (tX <= eX && tPrimeX <= eX)) {
+                        if (tX > tPrimeX) {
+                            this.nextMove = Cardinal.WEST;
+                        }
+                        else {
+                            this.nextMove = Cardinal.EAST;
+                        }
+                    }
+                    else {
+                        this.nextMove = Cardinal.WEST;
+                    }
+                }
+                else {
+                    // TAIL moves horizontally towards t_target's x-coordinate.
+                    if (targetPattern.getTailPosition().getX() < currentConfiguration.getTailPosition().getX()) {
+                        this.nextMove = Cardinal.WEST;
+                    }
+                    else {
+                        this.nextMove = Cardinal.EAST;
+                    }
+                }
+            }
         }
         else if (
             !checkC1() &&
@@ -298,7 +368,12 @@ public class Robot {
         )
         // PHASE VI
         {
-            
+            // HEAD moves horizontally to reach h_target
+            Coordinate headPosition = currentConfiguration.getHeadPosition();
+            if (headPosition.equals(currentConfiguration.getSelfPosition()) &&
+                !headPosition.equals(targetPattern.getHeadPosition())) {
+                this.nextMove = Cardinal.EAST;
+            }
         }
         else if (
             !checkC0() &&
@@ -307,7 +382,17 @@ public class Robot {
         )
         // PHASE VII
         {
-            
+            // TAIL moves vertically to reach t_target
+            Coordinate tailPosition = currentConfiguration.getTailPosition();
+            if (tailPosition.equals(currentConfiguration.getSelfPosition()) &&
+                !tailPosition.equals(targetPattern.getTailPosition())) {
+                this.nextMove = Cardinal.SOUTH;
+            }
         }
+    }
+
+    private void rearrange() {
+        // TODO: order target and robot positions
+        // TODO: implement REARRANGE pseudo-code (Algorithm 2)
     }
 }
