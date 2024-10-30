@@ -1,5 +1,6 @@
 package async.apf.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import async.apf.interfaces.IEvent;
@@ -25,12 +26,18 @@ public class Model implements IModel {
 
     @Override
     public void storeStartingConfiguration(List<Coordinate> pattern) {
-        this.loadedStartingConfiguration = pattern;
+        this.loadedStartingConfiguration = new ArrayList<>();
+        for (Coordinate coordinate : pattern) {
+            this.loadedStartingConfiguration.add(coordinate.copy());
+        }
     }
 
     @Override
     public void storeTargetPattern(List<Coordinate> pattern) {
-        this.loadedTargetPattern = pattern;
+        this.loadedTargetPattern = new ArrayList<>();
+        for (Coordinate coordinate : pattern) {
+            this.loadedTargetPattern.add(coordinate.copy());
+        }
     }
 
     @Override

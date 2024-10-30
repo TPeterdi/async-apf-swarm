@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import async.apf.interfaces.IEvent;
 import async.apf.interfaces.IEventListener;
@@ -25,7 +23,7 @@ public class Simulation implements IEventListener {
 
     private final List<Robot> robots;
 
-    private boolean hasBegun = false;
+    private boolean working = false;
     private boolean isStopped = false;
 
     private final Thread simulationThread;
@@ -46,13 +44,14 @@ public class Simulation implements IEventListener {
         
         this.scheduler = new AsyncScheduler(robotCount);
 
-        this.robots = IntStream.range(0, robotCount)
-                               .mapToObj(i -> new Robot(globalEventEmitter))
-                               .collect(Collectors.toList());
+        this.robots = new ArrayList<>();
+        for (int i = 0; i < robotCount; i++) {
+            this.robots.add(new Robot(globalEventEmitter));
+        }
 
         this.simulationThread = new Thread(() -> {
             // Validation runs after each robot movement to match the current configuration with the target pattern.
-            while (this.hasBegun) {
+            while (this.working) {
                 if (this.isStopped) continue;
 
                 int randomIndex = this.scheduler.pickNext();
@@ -68,9 +67,9 @@ public class Simulation implements IEventListener {
 
     public void start() {
         this.isStopped = false;
-        if (this.hasBegun) return;
+        if (this.working) return;
 
-        this.hasBegun = true;
+        this.working = true;
         this.simulationThread.start();
     }
 
@@ -87,7 +86,7 @@ public class Simulation implements IEventListener {
         currentCoordinate.moveBy(dx, dy);
 
         // We only update the running state after each move (since that's the only event that can achieve our goal).
-        this.hasBegun = !patternCompleted();
+        this.working = !patternCompleted();
     }
 
     private boolean patternCompleted() {
@@ -120,7 +119,7 @@ public class Simulation implements IEventListener {
     }
 
     public boolean isRunning() {
-        return hasBegun && !isStopped;
+        return working && !isStopped;
     }
 
     @Override
@@ -144,9 +143,9 @@ public class Simulation implements IEventListener {
                 }
                 case COMPUTE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_COMPUTING));
                 case MOVE_NORTH -> moveRobotBy(index, 0, 1);
-                case MOVE_EAST -> moveRobotBy(index, 1, 0);
+                case MOVE_EAST  -> moveRobotBy(index, 1, 0);
                 case MOVE_SOUTH -> moveRobotBy(index, 0, -1);
-                case MOVE_WEST -> moveRobotBy(index, -1, 0);
+                case MOVE_WEST  -> moveRobotBy(index, -1, 0);
                 case IDLE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_IDLE));
                 default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
             }

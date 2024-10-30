@@ -13,6 +13,10 @@ public class Coordinate {
         this.y = y;
     }
 
+    public Coordinate copy() {
+        return new Coordinate(x, y);
+    }
+
     public int getX() {
         return x;
     }
@@ -21,10 +25,10 @@ public class Coordinate {
         return y;
     }
 
-    public void moveBy(int x, int y) 
+    public void moveBy(int dx, int dy) 
     {
-        this.x += x;
-        this.y += y;
+        this.x += dx;
+        this.y += dy;
     }
 
     public Coordinate translate(Coordinate newOrigin) 

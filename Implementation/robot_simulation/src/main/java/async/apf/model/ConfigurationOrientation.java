@@ -24,7 +24,9 @@ public class ConfigurationOrientation {
 
         this.coordinates = new ArrayList<>();
         for (int idx = 0; idx < binaryRepresentation.size(); idx++) {
-            coordinates.add(OrientationHelper.indexToCoordinate(idx, width));
+            if (Boolean.TRUE.equals(binaryRepresentation.get(idx))) {
+                coordinates.add(OrientationHelper.indexToCoordinate(idx, width));
+            }
         }
     }
     
