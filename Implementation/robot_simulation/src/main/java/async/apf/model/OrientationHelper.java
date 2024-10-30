@@ -95,8 +95,8 @@ public final class OrientationHelper {
         int y = index / width;
         int rem = index % width;
         int x = y % 2 == 0
-            ? width - rem - 1
-            : rem;
+            ? rem
+            : width - rem - 1;
         return new Coordinate(x, y);
     }
 
@@ -138,7 +138,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     false, true, true),
                     Cardinal.NORTH,
-                    false,
+                    true,
                     width,
                     height);
 
@@ -154,7 +154,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     true, false, true),
                     Cardinal.SOUTH,
-                    false,
+                    true,
                     width,
                     height);
                 
@@ -180,7 +180,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     false, true, true),
                     Cardinal.NORTH,
-                    false,
+                    true,
                     width,
                     height);
     
@@ -196,7 +196,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     true,  false, false),
                     Cardinal.EAST,
-                    false,
+                    true,
                     width,
                     height);
     
@@ -212,7 +212,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     false, false, false),
                     Cardinal.WEST,
-                    false,
+                    true,
                     width,
                     height);
     
@@ -220,7 +220,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     true, false, true),
                     Cardinal.SOUTH,
-                    false,
+                    true,
                     width,
                     height);
     
@@ -259,7 +259,7 @@ public final class OrientationHelper {
                 snakeIterate(positionMatrix, x -> x, width, height,
                 false, true, true),
                 Cardinal.NORTH,
-                false,
+                true,
                 width,
                 height);
             
