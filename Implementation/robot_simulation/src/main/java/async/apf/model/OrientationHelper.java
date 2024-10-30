@@ -91,13 +91,21 @@ public final class OrientationHelper {
         return orientation;
     }
 
-    public static Coordinate determineCoordinateFromIndex(int index, int width) {
+    public static Coordinate indexToCoordinate(int index, int width) {
         int y = index / width;
         int rem = index % width;
         int x = y % 2 == 0
             ? width - rem - 1
             : rem;
         return new Coordinate(x, y);
+    }
+
+    public static int coordinateToIndex(Coordinate index, int width) {
+        int xOffset = index.getY() % 2 == 0
+            ? index.getX() 
+            : width - index.getX() - 1;
+
+        return index.getY() * width + xOffset;
     }
 
     private static Boolean[][] initializePositionMatrix(int width, int height, List<Coordinate> configuration) {
