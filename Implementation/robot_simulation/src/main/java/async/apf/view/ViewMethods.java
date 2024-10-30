@@ -4,19 +4,19 @@ import async.apf.model.events.EventEmitter;
 import async.apf.view.enums.viewEventType;
 import async.apf.view.events.viewCoordinatesEvent;
 import async.apf.view.events.viewSimulationEvent;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Scale;
+import javafx.scene.transform.Translate;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -32,7 +32,11 @@ public class ViewMethods {
     private double mouseY;
     private double translateX = 0;
     private double translateY = 0;
+    private double offsetX = 0;
+    private double offsetY = 0;
     private double scaleFactor = 1.0;
+    private final int cellSize = 20;
+
     public Button simulationStartButton;
     public Boolean isSimulationRunning = false;
     public Boolean isSimulationFinished = false;
@@ -151,51 +155,61 @@ public class ViewMethods {
         Stage newWindow = new Stage();
         newWindow.setTitle("Simulation");
 
-        Canvas canvas = new Canvas(800, 600);
+        int maxX = initialStates.stream().mapToInt(Coordinate::getX).max().orElse(0) + 1;
+        int maxY = initialStates.stream().mapToInt(Coordinate::getY).max().orElse(0) + 4;
+        Canvas canvas = new Canvas(400, 400);
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        drawGrid(gc, 1000,600);
 
-        canvas.setOnMousePressed(event -> {
-            mouseX = event.getSceneX();
-            mouseY = event.getSceneY();
-        });
+        offsetX = canvas.getWidth() / 2 - (maxX * cellSize) / 2.0;
+        offsetY = canvas.getHeight() / 2 - (maxY * cellSize) / 2.0;
 
-        canvas.setOnMouseDragged(event -> {
-            double deltaX = event.getSceneX() - mouseX;
-            double deltaY = event.getSceneY() - mouseY;
-
-            translateX += deltaX;
-            translateY += deltaY;
-
-            canvas.setTranslateX(translateX);
-            canvas.setTranslateY(translateY);
-
-            mouseX = event.getSceneX();
-            mouseY = event.getSceneY();
-        });
-
+        canvas.setOnMousePressed(this::onMousePressed);
+        canvas.setOnMouseDragged(e -> onMouseDragged(e, gc, maxX, maxY));
+        //canvas.setOnScroll(e -> onScroll(e, gc, maxX, maxY));
         canvas.setOnScroll((ScrollEvent event) -> {
             double zoomFactor = event.getDeltaY() > 0 ? 1.1 : 0.9;
             scaleFactor *= zoomFactor;
-
-            Scale scale = new Scale(zoomFactor, zoomFactor, event.getX(), event.getY());
-            canvas.getTransforms().add(scale);
-
+            drawScene(gc, maxX, maxY);
             event.consume();
         });
 
-        Pane canvasPane = new StackPane(canvas);
+        drawScene(gc, maxX,maxY);
+
+
+        StackPane canvasPane = new StackPane(canvas);
+        canvasPane.setAlignment(Pos.CENTER);
 
         VBox layout = getvBox();
-        HBox hBox = new HBox(10, layout, canvasPane);
+        Region leftSpacer = new Region();
+        Region rightSpacer = new Region();
+        HBox.setHgrow(leftSpacer, Priority.ALWAYS);
+        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
+        HBox hBox = new HBox(10, layout, leftSpacer, canvasPane, rightSpacer);
 
         hBox.setStyle("-fx-padding: 10;");
-        Scene scene = new Scene(hBox, 1000,600);
+        Scene scene = new Scene(hBox, 800,600);
 
         newWindow.setScene(scene);
-        newWindow.setMaximized(true);
         newWindow.show();
     }
+
+    private void onMousePressed(MouseEvent e) {
+        mouseX = e.getSceneX();
+        mouseY = e.getSceneY();
+    }
+
+    private void onMouseDragged(MouseEvent event, GraphicsContext gc, int maxX, int maxY) {
+        double deltaX = event.getSceneX() - mouseX;
+        double deltaY = event.getSceneY() - mouseY;
+        translateX += deltaX;
+        translateY += deltaY;
+        mouseX = event.getSceneX();
+        mouseY = event.getSceneY();
+
+        drawScene(gc, maxX, maxY);
+    }
+
+
 
     private VBox getvBox() {
         Button controllButton = new Button("Start");
@@ -227,25 +241,51 @@ public class ViewMethods {
     }
 
 
-    private void checkStates() {
-        if (!(initialStatesTemp.isEmpty()) && !(targetStatesTemp.isEmpty())) {
-            simulationStartButton.setDisable(false);
-        }
+
+
+    private void drawScene(GraphicsContext gc, int maxX, int maxY) {
+        gc.clearRect(0, 0, gc.getCanvas().getWidth(), gc.getCanvas().getHeight());
+
+        gc.save();
+        gc.translate(translateX, translateY);
+        gc.scale(scaleFactor, scaleFactor);
+
+        drawGrid(gc, maxX, maxY);
+        drawPoints(gc);
+
+        gc.restore();
     }
 
-    private void drawGrid(GraphicsContext gc, double width, double height) {
-        gc.clearRect(0, 0, width, height);
+    private void drawGrid(GraphicsContext gc, int maxX, int maxY) {
         gc.setStroke(Color.BLUE);
         gc.setLineWidth(0.5);
 
         // Horizontal lines
-        for (int i = 0; i < width; i += 20) {
-            gc.strokeLine(i, 0, i, height);
+        for (int i = 0; i <= maxX * cellSize; i += cellSize) {
+            gc.strokeLine(i + offsetX, offsetY, i + offsetX, maxY * cellSize + offsetY);
         }
 
         // Vertical lines
-        for (int i = 0; i < height; i += 20) {
-            gc.strokeLine(0, i, width, i);
+        for (int i = 0; i < maxY * cellSize; i += cellSize) {
+            gc.strokeLine(offsetX , i + offsetY, maxX * cellSize + offsetX, i + offsetY);
+        }
+        gc.strokeLine(offsetX, maxY * cellSize + offsetY, maxX * cellSize + offsetX, maxY * cellSize + offsetY);
+    }
+
+    private void drawPoints(GraphicsContext gc){
+        gc.setFill(Color.RED);
+        int pointRadius = 6;
+        for (Coordinate cord : initialStates){
+            double x = cord.getX() * cellSize + offsetX;
+            double y = cord.getY() * cellSize + offsetY;
+
+            gc.fillOval(x - pointRadius / 2.0, y - pointRadius / 2.0, pointRadius, pointRadius);
+        }
+    }
+
+    private void checkStates() {
+        if (!(initialStatesTemp.isEmpty()) && !(targetStatesTemp.isEmpty())) {
+            simulationStartButton.setDisable(false);
         }
     }
 
@@ -270,8 +310,6 @@ public class ViewMethods {
                 String[] values = line.split(";");
                 array.add(values);
             }
-            System.out.println("CSV data loaded:");
-            array.forEach(row -> System.out.println(String.join(", ", row)));
 
         } catch (IOException e) {
             System.out.println("Something wrong happened during file read: " + e.getMessage());
@@ -286,10 +324,6 @@ public class ViewMethods {
                 int y = Integer.parseInt(parts[1].trim());
                 to.add(new Coordinate(x, y));
             }
-        }
-
-        for (Coordinate coord : to) {
-            System.out.println("X: " + coord.getX() + ", Y: " + coord.getY());
         }
     }
 }

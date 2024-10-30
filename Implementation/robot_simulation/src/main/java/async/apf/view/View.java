@@ -3,6 +3,7 @@ import async.apf.controller.Controller;
 import async.apf.interfaces.IController;
 import async.apf.interfaces.IModel;
 import async.apf.interfaces.IView;
+import async.apf.model.Coordinate;
 import async.apf.model.Model;
 import async.apf.model.events.EventEmitter;
 import async.apf.model.events.SimulationEvent;
@@ -89,6 +90,14 @@ public class View extends Application implements IView {
                 System.out.println("View: Robot " + event.getRobotId() + " is moving from (" +
                         event.getFromX() + "," + event.getFromY() + ") to (" +
                         event.getToX() + "," + event.getToY() + ").");
+                for (Coordinate coord : viewMethods.initialStates){
+                    if (coord.getX() == event.getFromX() && coord.getY() == event.getFromY()) {
+                        coord.setX(event.getToX());
+                        coord.setY(event.getToY());
+                        break;
+                    }
+                }
+                System.out.println("Initial state: " + viewMethods.initialStates);
                 break;
             case ROBOT_IDLE:
                 System.out.println("View: Robot " + event.getRobotId() + " is idle.");
