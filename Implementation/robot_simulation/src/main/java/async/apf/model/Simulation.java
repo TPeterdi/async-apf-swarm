@@ -90,6 +90,7 @@ public class Simulation implements IEventListener {
     }
 
     private boolean patternCompleted() {
+        // TODO: fix pattern check! (Translate to 0,0 and consider all orientations)
         // Count occurrences of each coordinate in the first list
         Map<Coordinate, Integer> countMap = new HashMap<>();
         for (Coordinate coord : targetPattern) {

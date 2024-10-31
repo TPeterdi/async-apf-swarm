@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 
 import async.apf.model.enums.Cardinal;
 import async.apf.model.enums.RobotEventType;
@@ -14,6 +15,7 @@ import async.apf.model.events.RobotEvent;
 public class Robot {
     private final EventEmitter globalEventEmitter;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ReentrantLock activationLock = new ReentrantLock();
 
     private boolean active = false;
     private int currentId;
@@ -32,13 +34,19 @@ public class Robot {
     }
 
     public void activate(int currentId) {
-        if (this.active) {
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
-            return;
+        activationLock.lock();
+        try {
+            if (this.active) {
+                this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
+                return;
+            }
+            this.active = true;
+            this.currentId = currentId;
+            this.executorService.submit(this::cycleLoop);
         }
-        this.active = true;
-        this.currentId = currentId;
-        this.executorService.submit(this::cycleLoop);
+        finally {
+            activationLock.unlock();
+        }
     }
 
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
@@ -48,21 +56,25 @@ public class Robot {
     }
 
     private void cycleLoop() {
-        // LOOK
-        this.lookLatch = new CountDownLatch(1);
-        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
-        awaitLooking();
+        activationLock.lock();
+        try {
+            // LOOK
+            this.lookLatch = new CountDownLatch(1);
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
+            awaitLooking();
 
-        // COMPUTE
-        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.COMPUTE, this.currentId));
-        computeNextMove();
+            // COMPUTE
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.COMPUTE, this.currentId));
+            computeNextMove();
 
-        // MOVE
-        signalMovement();
+            // MOVE
+            signalMovement();
 
-        resetState();
-        this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentId));
-
+            resetState();
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentId));
+        } finally {
+            activationLock.unlock();
+        }
     }
 
     private void awaitLooking() {
@@ -164,22 +176,26 @@ public class Robot {
     // #region CONDITION CHECKS
     // C = C_target
     private boolean checkC0() {
-        return currentConfiguration.equals(targetPattern);
+        boolean result = currentConfiguration.equals(targetPattern);
+        return result;
     }
 
     // C' = C'_target
     private boolean checkC1() {
-        return currentConfiguration.primeEquals(targetPattern);
+        boolean result = currentConfiguration.primeEquals(targetPattern);
+        return result;
     }
 
     // C'' = C''_target
     private boolean checkC2() {
-        return currentConfiguration.primePrimeEquals(targetPattern);
+        boolean result = currentConfiguration.primePrimeEquals(targetPattern);
+        return result;
     }
 
     // x-coordinate of the tail = x-coordinate of t_target
     private boolean checkC3() {
-        return currentConfiguration.getTailPosition().getX() == targetPattern.getTailPosition().getX();
+        boolean result = currentConfiguration.getTailPosition().getX() == targetPattern.getTailPosition().getX();
+        return result;
     }
 
     // There is neither any robot except the tail nor any target positions
@@ -189,23 +205,19 @@ public class Robot {
         int yHt = tailCoordinate.getY();
 
         // Look for other robots
-        for (int y = yHt; y < currentConfiguration.getHeight(); y++) {
-            for (int x = 0; x < currentConfiguration.getWidth(); x++) {
-                // Skip for current (tail) robot
-                if (x == tailCoordinate.getX() && y == yHt) continue;
+        for (Coordinate robotCoordinate : currentConfiguration.getCoordinates()) {
+            if (robotCoordinate.getY() < yHt ||
+                robotCoordinate.equals(tailCoordinate))
+                continue;
 
-                if (currentConfiguration.isCoordinateMarked(x, y)) {
-                    return false;
-                }
-            }
+            return false;
         }
         // Look for target positions
-        for (int y = yHt; y < targetPattern.getHeight(); y++) {
-            for (int x = 0; x < targetPattern.getWidth(); x++) {
-                if (targetPattern.isCoordinateMarked(x, y)) {
-                    return false;
-                }
-            }
+        for (Coordinate targetCoordinate : targetPattern.getCoordinates()) {
+            if (targetCoordinate.getY() < yHt)
+                continue;
+
+            return false;
         }
 
         return true;
@@ -213,12 +225,14 @@ public class Robot {
 
     // y-coordinate of the tail is odd
     private boolean checkC5() {
-        return currentConfiguration.getTailPosition().getY() % 2 == 1;
+        boolean result = currentConfiguration.getTailPosition().getY() % 2 == 1;
+        return result;
     }
 
     // SER of C is not a square
     private boolean checkC6() {
-        return currentConfiguration.getWidth() != currentConfiguration.getHeight();
+        boolean result = currentConfiguration.getWidth() != currentConfiguration.getHeight();
+        return result;
     }
 
     // There is neither any robot except the tail nor any target positions
@@ -227,22 +241,20 @@ public class Robot {
         Coordinate tailCoordinate = currentConfiguration.getTailPosition();
         int xVt = tailCoordinate.getX();
 
-        // Check for other robots
-        for (int x = xVt; x < currentConfiguration.getWidth(); x++) {
-            for (int y = 0; y < currentConfiguration.getHeight(); y++) {
-                if (x == xVt && y == tailCoordinate.getY()) continue;
-                if (currentConfiguration.isCoordinateMarked(x, y)) {
-                    return false;
-                }
-            }
+        // Look for other robots
+        for (Coordinate robotCoordinate : currentConfiguration.getCoordinates()) {
+            if (robotCoordinate.getX() < xVt ||
+                robotCoordinate.equals(tailCoordinate))
+                continue;
+
+            return false;
         }
-        // Check for target positions
-        for (int x = xVt; x < targetPattern.getWidth(); x++) {
-            for (int y = 0; y < targetPattern.getHeight(); y++) {
-                if (targetPattern.isCoordinateMarked(x, y)) {
-                    return false;
-                }
-            }
+        // Look for target positions
+        for (Coordinate targetCoordinate : targetPattern.getCoordinates()) {
+            if (targetCoordinate.getX() < xVt)
+                continue;
+
+            return false;
         }
 
         return true;
@@ -250,8 +262,10 @@ public class Robot {
 
     // The head is at origin
     private boolean checkC8() {
-        return currentConfiguration.getHeadPosition().getX() == 0
+        boolean result =
+            currentConfiguration.getHeadPosition().getX() == 0
             && currentConfiguration.getHeadPosition().getY() == 0;
+        return result;
     }
 
     // If the tail and the head are relocated respectively at C and A, then
@@ -265,7 +279,8 @@ public class Robot {
         copy.getFirst().setY(0);
         copy.getLast().setX(currentConfiguration.getWidth() - 1);
         copy.getLast().setY(currentConfiguration.getHeight() - 1);
-        return !OrientationHelper.isSymmetric(copy);
+        boolean result = !OrientationHelper.isSymmetric(copy);
+        return result;
     }
 
     // C′ has a symmetry with respect to a vertical line
@@ -490,8 +505,13 @@ public class Robot {
         // TAIL moves vertically to reach t_target
         Coordinate tailPosition = currentConfiguration.getTailPosition();
         if (tailPosition.equals(currentConfiguration.getSelfPosition()) &&
-                !tailPosition.equals(targetPattern.getTailPosition())) {
-            this.nextMove = Cardinal.SOUTH;
+            !tailPosition.equals(targetPattern.getTailPosition())) {
+            if (targetPattern.getTailPosition().getY() > tailPosition.getY()) {
+                this.nextMove = Cardinal.NORTH;
+            }
+            else {
+                this.nextMove = Cardinal.SOUTH;
+            }
         }
     }
 

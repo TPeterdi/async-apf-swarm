@@ -93,14 +93,12 @@ public class ConfigurationOrientation {
         if (this == obj)
             return true;
         
-        if (obj == null || getClass() != obj.getClass())
+        if (obj == null)
             return false;
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
-        if (other.binaryRepresentation.size() != binaryRepresentation.size())
-            return false;
 
-        for (int idx = 1; idx < coordinates.size(); idx++) {
+        for (int idx = 0; idx < coordinates.size() - 1; idx++) {
             if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
                 return false;
             }
@@ -112,12 +110,10 @@ public class ConfigurationOrientation {
         if (this == obj)
             return true;
         
-        if (obj == null || getClass() != obj.getClass())
+        if (obj == null)
             return false;
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
-        if (other.binaryRepresentation.size() != binaryRepresentation.size())
-            return false;
 
         for (int idx = 1; idx < coordinates.size() - 1; idx++) {
             if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
