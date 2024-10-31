@@ -11,6 +11,7 @@ import async.apf.model.events.EventEmitter;
 import async.apf.view.enums.ViewEventType;
 import async.apf.view.events.ViewCoordinatesEvent;
 import async.apf.view.events.ViewSimulationEvent;
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -30,13 +31,17 @@ import javafx.stage.Stage;
 
 public class ViewMethods {
     private Canvas simulationCanvas;
+    private VBox controlsBox;
+    private VBox simulationControlsVBox;
 
     public Button simulationStartButton;
+    public Boolean isSimulationStarted = false;
     public Boolean isSimulationRunning = false;
     public Boolean isSimulationFinished = false;
     private final List<String[]> initialStatesTemp = new ArrayList<>();
     private final List<String[]> targetStatesTemp = new ArrayList<>();
-    public final List<Coordinate> initialStates = new ArrayList<>();
+    public List<Coordinate> initialStates = new ArrayList<>();
+    public final List<Coordinate> initialStatesOriginal = new ArrayList<>();
     public final List<Coordinate> targetStates = new ArrayList<>();
     private EventEmitter simulationEventEmitter;
 
@@ -75,7 +80,6 @@ public class ViewMethods {
             }
             checkStates();
         });
-        //Button randomButton = new Button("Random");
 
         Button resetButton = new Button("Reset");
         resetButton.setOnAction(e -> {initialStatesTemp.clear(); textField.clear(); checkStates();});
@@ -85,17 +89,17 @@ public class ViewMethods {
 
         Button confirmButton = new Button("Confirm");
         confirmButton.setOnAction(e -> {
-                    initialStatesTemp.add(textField.getText().split(";"));
-                    stringToCoordinate(initialStatesTemp, initialStates);
-                    newWindow.close();
+            initialStatesTemp.add(textField.getText().split(";"));
+            stringToCoordinate(initialStatesTemp, initialStatesOriginal);
+            copyCoordinates();
+            newWindow.close();
             try {
                 simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
             checkStates();
-                }
-        );
+        });
 
         VBox layout = new VBox(10, label, exampleLabel, textField, importButton, resetButton, closeButton, confirmButton);
         Scene scene = new Scene(layout, 400, 500);
@@ -125,8 +129,6 @@ public class ViewMethods {
             checkStates();
         });
 
-        //Button randomButton = new Button("Random");
-
         Button resetButton = new Button("Reset");
         resetButton.setOnAction(e -> {
             targetStatesTemp.clear(); textField.clear(); checkStates();});
@@ -136,17 +138,16 @@ public class ViewMethods {
 
         Button confirmButton = new Button("Confirm");
         confirmButton.setOnAction(e -> {
-                    targetStatesTemp.add(textField.getText().split(";"));
-                    stringToCoordinate(targetStatesTemp, targetStates);
-                    newWindow.close();
+            targetStatesTemp.add(textField.getText().split(";"));
+            stringToCoordinate(targetStatesTemp, targetStates);
+            newWindow.close();
             try {
                 simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
             checkStates();
-                }
-        );
+        });
 
         VBox layout = new VBox(10, label, exampleLabel, textField, importButton, resetButton, closeButton, confirmButton);
         Scene scene = new Scene(layout, 400, 500);
@@ -178,8 +179,11 @@ public class ViewMethods {
         VBox layout = new VBox(10); // VBox for vertical alignment
         layout.setAlignment(Pos.CENTER); // Center alignment for all elements
 
+        controlsBox = getvBox(newWindow); // Get VBox reference here
+        simulationControlsVBox = controlsBox;
+
         // Add components to the layout in the desired order
-        layout.getChildren().addAll(getvBox(), canvasPane, slider);
+        layout.getChildren().addAll(simulationControlsVBox, canvasPane, slider);
 
         Scene scene = new Scene(layout, 800, 600);
         newWindow.setScene(scene);
@@ -242,33 +246,94 @@ public class ViewMethods {
         drawGrid(gc);
     }
 
-    private VBox getvBox() {
-        Button controllButton = new Button("Start");
+    private VBox getvBox(Stage window) {
+        Button controllButton = getMainButton();
+
+        Button closeButton = getCloseButton();
+        return new VBox(10, controllButton, closeButton);
+    }
+
+    private Button getMainButton() {
+        Button controllButton = new Button();
+        if(isSimulationFinished){
+            controllButton.setText("Restart");
+        } else if (isSimulationRunning) {
+            controllButton.setText("Pause");
+        } else if (isSimulationStarted) {
+            controllButton.setText("Continue");
+        } else {
+            controllButton.setText("Start");
+        }
+
         controllButton.setOnAction(e -> {
-            if(isSimulationRunning){
-                isSimulationRunning = false;
+            if(isSimulationFinished) {
+                copyCoordinates();
+                isSimulationFinished = false;
+                isSimulationRunning = true;
+                isSimulationStarted = true;
                 try {
-                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_STOP));
+                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_START));
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
-                controllButton.setText("Continue");
+                refreshControlsVBox();
+
             }
-            else{
+            else if(isSimulationRunning){
+                isSimulationRunning = false;
+                isSimulationFinished = false;
+                isSimulationStarted = true;
+                try {
+                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_PAUSE));
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+                refreshControlsVBox();
+
+            }
+            else if(isSimulationStarted){
+                isSimulationRunning = true;
+                isSimulationFinished = false;
+                isSimulationStarted = true;
+                try {
+                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_CONTINUE));
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+                refreshControlsVBox();
+
+            }
+            else {
+                isSimulationFinished = false;
+                isSimulationStarted = true;
                 isSimulationRunning = true;
                 try {
                     simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_START));
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
-                controllButton.setText("Stop");
+                refreshControlsVBox();
             }
-            System.out.println(isSimulationRunning);
         });
+        return controllButton;
+    }
 
-        Button resetButton = new Button("Reset");
-        resetButton.setVisible(isSimulationFinished);
-        return new VBox(10, controllButton, resetButton);
+    private Button getCloseButton() {
+        Button closeButton = new Button("Close");
+        closeButton.setOnAction(e -> {
+            isSimulationRunning = false;
+            isSimulationFinished = false;
+            try {
+                simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_END));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            initialStates.clear();
+            initialStatesOriginal.clear();
+            targetStates.clear();
+            // Close logic here if needed
+        });
+        return closeButton;
     }
 
     private void drawGrid(GraphicsContext gc) {
@@ -328,6 +393,12 @@ public class ViewMethods {
         }
     }
 
+    private void copyCoordinates() {
+        for (Coordinate coord : this.initialStatesOriginal) {
+            this.initialStates.add(coord.copy());
+        }
+    }
+
     private void openCsvFile(Stage stage, List<String[]> array){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose a CSV file");
@@ -370,4 +441,14 @@ public class ViewMethods {
         GraphicsContext gc = simulationCanvas.getGraphicsContext2D();
         drawGrid(gc);
     }
+
+    public void refreshControlsVBox() {
+        Platform.runLater(() -> {
+            controlsBox.getChildren().clear();
+            controlsBox.getChildren().add(getMainButton());
+            controlsBox.getChildren().add(getCloseButton());
+        });
+    }
+
+
 }

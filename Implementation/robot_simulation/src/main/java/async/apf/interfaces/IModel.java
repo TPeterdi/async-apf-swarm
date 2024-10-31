@@ -10,5 +10,7 @@ public interface IModel extends IEventListener {
     void storeTargetPattern(List<Coordinate> targetPattern);
     void setSimulationDelay(int delay);
     void startSimulation() throws InvalidInputException;
-    void stopSimulation();
+    void continueSimulation();
+    void pauseSimulation();
+    void endSimulation();
 }

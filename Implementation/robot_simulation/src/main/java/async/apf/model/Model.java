@@ -60,8 +60,19 @@ public class Model implements IModel {
         this.simulationEventEmitter.addEventListener(this.currentSimulation);
         this.currentSimulation.start();
     }
+
     @Override
-    public void stopSimulation() {
+    public void continueSimulation() {
+
+    }
+    @Override
+    public void pauseSimulation() {
+
+    }
+
+
+    @Override
+    public void endSimulation() {
         if (this.currentSimulation == null) return;
         if (!this.isSimulationRunning) return;
 

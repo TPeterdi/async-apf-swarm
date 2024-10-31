@@ -72,6 +72,7 @@ public class View extends Application implements IView {
                 System.out.println("View: Simulation has ended!");
                 viewMethods.isSimulationFinished = true;
                 viewMethods.isSimulationRunning = false;
+                viewMethods.refreshControlsVBox();
                 break;
             default:
                 break;

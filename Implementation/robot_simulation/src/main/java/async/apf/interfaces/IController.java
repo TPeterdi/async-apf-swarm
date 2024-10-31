@@ -12,5 +12,7 @@ public interface IController extends IEventListener {
     void displayEvent(SimulationEvent event);
     void setSimulationDelay(int delay);
     void startSimulation() throws Exception;
-    void stopSimulation();
+    void continueSimulation();
+    void pauseSimulation();
+    void endSimulation();
 }

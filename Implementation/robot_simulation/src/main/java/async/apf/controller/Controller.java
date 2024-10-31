@@ -53,7 +53,17 @@ public class Controller implements IController {
     }
 
     @Override
-    public void stopSimulation() {
+    public void continueSimulation() {
+        this.model.stopSimulation();
+    }
+
+    @Override
+    public void pauseSimulation() {
+        this.model.stopSimulation();
+    }
+
+    @Override
+    public void endSimulation() {
         this.model.stopSimulation();
     }
 
@@ -79,7 +89,9 @@ public class Controller implements IController {
                         System.err.println(e.getMessage());
                     }
                 }
-                case SIMULATION_STOP  -> stopSimulation();
+                case SIMULATION_CONTINUE  -> continueSimulation();
+                case SIMULATION_PAUSE  -> pauseSimulation();
+                case SIMULATION_END -> endSimulation();
                 case SET_SIMULATION_DELAY -> setSimulationDelay(viewSimulationEvent.getDelay());
                 default -> throw new IllegalStateException("Unexpected event type: " + viewSimulationEvent.getEventType());
             }
