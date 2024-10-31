@@ -171,6 +171,9 @@ public class Robot {
         else if (checkForPhaseVII()) {
             doPhaseVII();
         }
+        else {
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.PATTERN_COMPLETE, this.currentId));
+        }
     }
 
     // #region CONDITION CHECKS

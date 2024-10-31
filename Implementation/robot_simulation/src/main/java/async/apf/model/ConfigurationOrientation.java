@@ -68,17 +68,15 @@ public class ConfigurationOrientation {
         if (this == obj)
             return true;
         
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-        
-        ConfigurationOrientation other = (ConfigurationOrientation) obj;
-        if (other.binaryRepresentation.size() != binaryRepresentation.size())
+        if (obj == null)
             return false;
 
-        for (int idx = 0; idx < binaryRepresentation.size(); idx++) {
-            if (!(other.binaryRepresentation.get(idx) ^ binaryRepresentation.get(idx)))
+        ConfigurationOrientation other = (ConfigurationOrientation) obj;
+
+        for (int idx = 0; idx < coordinates.size(); idx++) {
+            if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
                 return false;
-            
+            }
         }
         return true;
     }

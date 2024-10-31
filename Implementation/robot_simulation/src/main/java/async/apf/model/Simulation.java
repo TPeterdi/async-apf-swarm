@@ -1,9 +1,7 @@
 package async.apf.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import async.apf.interfaces.IEvent;
 import async.apf.interfaces.IEventListener;
@@ -52,7 +50,6 @@ public class Simulation implements IEventListener {
         }
 
         this.simulationThread = new Thread(() -> {
-            // Validation runs after each robot movement to match the current configuration with the target pattern.
             while (this.working) {
                 if (this.isStopped) continue;
 
@@ -68,6 +65,7 @@ public class Simulation implements IEventListener {
                     System.err.println(ex.getMessage());
                 }
             }
+            globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_END));
         });
     }
 
@@ -81,6 +79,7 @@ public class Simulation implements IEventListener {
         if (this.working) return;
 
         this.working = true;
+        globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_START));
         this.simulationThread.start();
     }
 
@@ -95,31 +94,6 @@ public class Simulation implements IEventListener {
         int currentY = currentCoordinate.getY();
         globalEventEmitter.emitEvent(new SimulationEvent(robotIndex, SimulationEventType.ROBOT_MOVING, currentX, currentY, currentX + dx, currentY + dy));
         currentCoordinate.moveBy(dx, dy);
-
-        // We only update the running state after each move (since that's the only event that can achieve our goal).
-        this.working = !patternCompleted();
-    }
-
-    private boolean patternCompleted() {
-        // TODO: fix pattern check! (Translate to 0,0 and consider all orientations)
-        // Count occurrences of each coordinate in the first list
-        Map<Coordinate, Integer> countMap = new HashMap<>();
-        for (Coordinate coord : targetPattern) {
-            countMap.put(coord, countMap.getOrDefault(coord, 0) + 1);
-        }
-
-        // Decrease counts based on the second list
-        for (Coordinate coord : currentConfiguration) {
-            int count = countMap.getOrDefault(coord, 0);
-            if (count == 0) {
-                // If the coordinate was not found or already zero, lists are different
-                return false;
-            }
-            countMap.put(coord, count - 1);
-        }
-
-        // If all counts are zero, the lists contain the same coordinates
-        return true;
     }
 
     private List<Coordinate> translateConfigurationToRobotsCoordinate(Coordinate robotCoordinate) {
@@ -159,6 +133,7 @@ public class Simulation implements IEventListener {
                 case MOVE_SOUTH -> moveRobotBy(index, 0, -1);
                 case MOVE_WEST  -> moveRobotBy(index, -1, 0);
                 case IDLE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_IDLE));
+                case PATTERN_COMPLETE -> this.working = false;
                 default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
             }
         }

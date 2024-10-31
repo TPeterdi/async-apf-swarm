@@ -10,4 +10,5 @@ public enum RobotEventType {
     MOVE_WEST,
     STAY_PUT,
     IDLE,
+    PATTERN_COMPLETE,
 }
