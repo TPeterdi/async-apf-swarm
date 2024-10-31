@@ -9,8 +9,8 @@ import async.apf.interfaces.IView;
 import async.apf.model.Coordinate;
 import async.apf.model.events.SimulationEvent;
 import async.apf.view.View;
-import async.apf.view.events.viewCoordinatesEvent;
-import async.apf.view.events.viewSimulationEvent;
+import async.apf.view.events.ViewCoordinatesEvent;
+import async.apf.view.events.ViewSimulationEvent;
 import javafx.application.Application;
 
 public class Controller implements IController {
@@ -43,6 +43,11 @@ public class Controller implements IController {
     }
 
     @Override
+    public void setSimulationDelay(int delay) {
+        this.model.setSimulationDelay(delay);
+    }
+
+    @Override
     public void startSimulation() throws Exception {
         this.model.startSimulation();
     }
@@ -57,7 +62,7 @@ public class Controller implements IController {
         if (event instanceof SimulationEvent simulationEvent) {
             this.displayEvent(simulationEvent);
         }
-        else if (event instanceof viewCoordinatesEvent viewCoordinatesEvent) {
+        else if (event instanceof ViewCoordinatesEvent viewCoordinatesEvent) {
             switch (viewCoordinatesEvent.getEventType()) {
                 case LOAD_INITIAL_CONFIG -> setStartingConfiguration(viewCoordinatesEvent.getCoordinates());
                 case LOAD_TARGET_CONFIG -> setTargetPattern(viewCoordinatesEvent.getCoordinates());
@@ -65,7 +70,7 @@ public class Controller implements IController {
                         throw new IllegalStateException("Unexpected event type: " + viewCoordinatesEvent.getEventType());
             }
         }
-        else if (event instanceof viewSimulationEvent viewSimulationEvent) {
+        else if (event instanceof ViewSimulationEvent viewSimulationEvent) {
             switch (viewSimulationEvent.getEventType()) {
                 case SIMULATION_START -> {
                     try {
@@ -75,6 +80,7 @@ public class Controller implements IController {
                     }
                 }
                 case SIMULATION_STOP  -> stopSimulation();
+                case SET_SIMULATION_DELAY -> setSimulationDelay(viewSimulationEvent.getDelay());
                 default -> throw new IllegalStateException("Unexpected event type: " + viewSimulationEvent.getEventType());
             }
         }

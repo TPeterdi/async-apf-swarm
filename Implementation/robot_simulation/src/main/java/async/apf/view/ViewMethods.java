@@ -1,31 +1,31 @@
 package async.apf.view;
-import async.apf.model.Coordinate;
-import async.apf.model.events.EventEmitter;
-import async.apf.view.enums.viewEventType;
-import async.apf.view.events.viewCoordinatesEvent;
-import async.apf.view.events.viewSimulationEvent;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.transform.Scale;
-import javafx.scene.transform.Translate;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import async.apf.model.Coordinate;
+import async.apf.model.events.EventEmitter;
+import async.apf.view.enums.ViewEventType;
+import async.apf.view.events.ViewCoordinatesEvent;
+import async.apf.view.events.ViewSimulationEvent;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
+import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
 public class ViewMethods {
     private double mouseX;
@@ -65,7 +65,7 @@ public class ViewMethods {
             stringToCoordinate(initialStatesTemp, initialStates);
             newWindow.close();
             try {
-                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_INITIAL_CONFIG, initialStates));
+                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -85,7 +85,7 @@ public class ViewMethods {
                     stringToCoordinate(initialStatesTemp, initialStates);
                     newWindow.close();
             try {
-                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_INITIAL_CONFIG, initialStates));
+                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -114,7 +114,7 @@ public class ViewMethods {
             stringToCoordinate(targetStatesTemp, targetStates);
             newWindow.close();
             try {
-                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_TARGET_CONFIG, targetStates));
+                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -136,7 +136,7 @@ public class ViewMethods {
                     stringToCoordinate(targetStatesTemp, targetStates);
                     newWindow.close();
             try {
-                simulationEventEmitter.emitEvent(new viewCoordinatesEvent(viewEventType.LOAD_TARGET_CONFIG, targetStates));
+                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -157,6 +157,7 @@ public class ViewMethods {
 
         int maxX = initialStates.stream().mapToInt(Coordinate::getX).max().orElse(0) + 1;
         int maxY = initialStates.stream().mapToInt(Coordinate::getY).max().orElse(0) + 4;
+
         Canvas canvas = new Canvas(400, 400);
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
@@ -165,7 +166,6 @@ public class ViewMethods {
 
         canvas.setOnMousePressed(this::onMousePressed);
         canvas.setOnMouseDragged(e -> onMouseDragged(e, gc, maxX, maxY));
-        //canvas.setOnScroll(e -> onScroll(e, gc, maxX, maxY));
         canvas.setOnScroll((ScrollEvent event) -> {
             double zoomFactor = event.getDeltaY() > 0 ? 1.1 : 0.9;
             scaleFactor *= zoomFactor;
@@ -173,22 +173,36 @@ public class ViewMethods {
             event.consume();
         });
 
-        drawScene(gc, maxX,maxY);
+        drawScene(gc, maxX, maxY);
 
+        // Create the slider with min and max values
+        int initialDelayValue = 500;
+        Slider slider = new Slider(0, 2000, initialDelayValue);
+        this.simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SET_SIMULATION_DELAY, initialDelayValue));
+        slider.setShowTickLabels(true);
+        slider.setShowTickMarks(true);
+        slider.setMajorTickUnit(250);
+        slider.setMinorTickCount(50);
+        slider.setBlockIncrement(50);
+        slider.setSnapToTicks(true);
 
+        // Listener for slider value changes
+        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            int sliderValue = newValue.intValue();
+            this.simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SET_SIMULATION_DELAY, sliderValue));
+        });
+
+        // Create the layout
         StackPane canvasPane = new StackPane(canvas);
         canvasPane.setAlignment(Pos.CENTER);
 
-        VBox layout = getvBox();
-        Region leftSpacer = new Region();
-        Region rightSpacer = new Region();
-        HBox.setHgrow(leftSpacer, Priority.ALWAYS);
-        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
-        HBox hBox = new HBox(10, layout, leftSpacer, canvasPane, rightSpacer);
+        VBox layout = new VBox(10); // VBox for vertical alignment
+        layout.setAlignment(Pos.CENTER); // Center alignment for all elements
 
-        hBox.setStyle("-fx-padding: 10;");
-        Scene scene = new Scene(hBox, 800,600);
+        // Add components to the layout in the desired order
+        layout.getChildren().addAll(getvBox(), canvasPane, slider);
 
+        Scene scene = new Scene(layout, 800, 600);
         newWindow.setScene(scene);
         newWindow.show();
     }
@@ -217,7 +231,7 @@ public class ViewMethods {
             if(isSimulationRunning){
                 isSimulationRunning = false;
                 try {
-                    simulationEventEmitter.emitEvent(new viewSimulationEvent(viewEventType.SIMULATION_STOP));
+                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_STOP));
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
@@ -226,7 +240,7 @@ public class ViewMethods {
             else{
                 isSimulationRunning = true;
                 try {
-                    simulationEventEmitter.emitEvent(new viewSimulationEvent(viewEventType.SIMULATION_START));
+                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_START));
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }

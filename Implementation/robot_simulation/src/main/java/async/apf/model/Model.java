@@ -19,6 +19,7 @@ public class Model implements IModel {
     private final EventEmitter simulationEventEmitter;
 
     private Simulation currentSimulation;
+    private int currentDelay;
 
     public Model(EventEmitter simulationEventEmitter) {
         this.simulationEventEmitter = simulationEventEmitter;
@@ -41,12 +42,21 @@ public class Model implements IModel {
     }
 
     @Override
+    public void setSimulationDelay(int delay) {
+        this.currentDelay = delay;
+        if (this.currentSimulation != null) {
+            this.currentSimulation.setDelay(delay);
+        }
+    }
+
+    @Override
     public void startSimulation() throws InvalidInputException {
         if (this.isSimulationRunning) return;
 
         this.isSimulationRunning = true;
         
         this.currentSimulation = new Simulation(this.simulationEventEmitter, this.loadedStartingConfiguration, this.loadedTargetPattern);
+        this.currentSimulation.setDelay(this.currentDelay);
         this.simulationEventEmitter.addEventListener(this.currentSimulation);
         this.currentSimulation.start();
     }

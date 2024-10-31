@@ -1,22 +1,22 @@
 package async.apf.view.events;
 
 
-import async.apf.interfaces.IEvent;
-import async.apf.model.Coordinate;
-import async.apf.view.enums.viewEventType;
-
 import java.util.List;
 
-public class viewCoordinatesEvent implements IEvent {
-    private final viewEventType eventType;
+import async.apf.interfaces.IEvent;
+import async.apf.model.Coordinate;
+import async.apf.view.enums.ViewEventType;
+
+public class ViewCoordinatesEvent implements IEvent {
+    private final ViewEventType eventType;
     private final List<Coordinate> coordinates;
 
-    public viewCoordinatesEvent(viewEventType eventType, List<Coordinate> coordinates) {
+    public ViewCoordinatesEvent(ViewEventType eventType, List<Coordinate> coordinates) {
         this.eventType = eventType;
         this.coordinates = coordinates;
     }
 
-    public viewEventType getEventType() {
+    public ViewEventType getEventType() {
         return this.eventType;
     }
     public List<Coordinate> getCoordinates() {

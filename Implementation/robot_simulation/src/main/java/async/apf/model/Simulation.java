@@ -28,6 +28,8 @@ public class Simulation implements IEventListener {
 
     private final Thread simulationThread;
 
+    private int delay;
+
     // TODO: track statistics
 
     // Constructor to initialize the simulation with starting configuration, target pattern, and robots
@@ -58,12 +60,21 @@ public class Simulation implements IEventListener {
                 Robot pickedRobot = this.robots.get(randomIndex);
                 try {
                     pickedRobot.activate(randomIndex);
+
+                    if (this.delay > 0)
+                        Thread.sleep(this.delay);
+
                 } catch (Exception ex) {
                     System.err.println(ex.getMessage());
                 }
             }
         });
     }
+
+    public void setDelay(int delay) {
+        this.delay = delay;
+    }
+
 
     public void start() {
         this.isStopped = false;
@@ -124,7 +135,7 @@ public class Simulation implements IEventListener {
     }
 
     @Override
-    public void onEvent(IEvent event) {
+    public synchronized void onEvent(IEvent event) {
         if (event instanceof RobotEvent robotEvent) {
             RobotEventType eventType = robotEvent.getEventType();
             int index = robotEvent.getId();

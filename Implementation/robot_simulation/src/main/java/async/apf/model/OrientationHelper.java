@@ -310,12 +310,19 @@ public final class OrientationHelper {
 
         for (int index = 0; index < binaryLength; index++) {
             if (orientations.size() <= 1) break; // If one or no candidates remain, break out of the loop
+            final int finalIndex = index;
+            boolean hasTrueAtIndex = orientations
+                .stream()
+                .anyMatch(orientation -> Boolean.TRUE.equals(orientation.getBinaryRepresentation().get(finalIndex)));
 
-            // Check all candidates at the current index
-            for (int i = 0; i < orientations.size(); i++) {
-                List<Boolean> binaryList = orientations.get(i).getBinaryRepresentation();
-                if (Boolean.FALSE.equals(binaryList.get(index))) {
-                    orientations.remove(i);
+            if (hasTrueAtIndex) {
+                // Check all candidates at the current index
+                for (int i = 0; i < orientations.size(); i++) {
+                    List<Boolean> binaryList = orientations.get(i).getBinaryRepresentation();
+                    if (Boolean.FALSE.equals(binaryList.get(index))) {
+                        orientations.remove(i);
+                        i--;
+                    }
                 }
             }
         }

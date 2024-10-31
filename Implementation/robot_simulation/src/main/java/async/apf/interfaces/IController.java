@@ -10,6 +10,7 @@ public interface IController extends IEventListener {
     void setStartingConfiguration(List<Coordinate> pattern);
     void setTargetPattern(List<Coordinate> targetPattern);
     void displayEvent(SimulationEvent event);
+    void setSimulationDelay(int delay);
     void startSimulation() throws Exception;
     void stopSimulation();
 }

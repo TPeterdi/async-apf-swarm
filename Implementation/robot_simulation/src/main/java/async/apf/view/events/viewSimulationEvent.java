@@ -1,15 +1,24 @@
 package async.apf.view.events;
 
 import async.apf.interfaces.IEvent;
-import async.apf.view.enums.viewEventType;
+import async.apf.view.enums.ViewEventType;
 
-public class viewSimulationEvent implements IEvent {
+public class ViewSimulationEvent implements IEvent {
 
-    private final viewEventType eventType;
+    private final ViewEventType eventType;
+    private int delay;
 
-    public viewSimulationEvent(viewEventType eventType) {this.eventType = eventType;}
+    public ViewSimulationEvent(ViewEventType eventType) {this.eventType = eventType;}
+    public ViewSimulationEvent(ViewEventType eventType, int delay) {
+        this.eventType = eventType;
+        this.delay = delay;
+    }
 
-    public viewEventType getEventType() {
+    public ViewEventType getEventType() {
         return eventType;
+    }
+
+    public int getDelay() {
+        return delay;
     }
 }
