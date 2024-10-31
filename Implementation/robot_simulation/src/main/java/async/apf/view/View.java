@@ -70,6 +70,8 @@ public class View extends Application implements IView {
                 break;
             case SIMULATION_END:
                 System.out.println("View: Simulation has ended!");
+                viewMethods.isSimulationFinished = true;
+                viewMethods.isSimulationRunning = false;
                 break;
             default:
                 break;
@@ -86,7 +88,6 @@ public class View extends Application implements IView {
                 System.out.println("View: Robot " + event.getRobotId() + " is computing data.");
                 break;
             case ROBOT_MOVING:
-                // Listában robotokat tárolni, amelyik x && y-e fromX && Y-el megegyezik, frissíteni a helyét
                 System.out.println("View: Robot " + event.getRobotId() + " is moving from (" +
                         event.getFromX() + "," + event.getFromY() + ") to (" +
                         event.getToX() + "," + event.getToY() + ").");
@@ -98,6 +99,8 @@ public class View extends Application implements IView {
                     }
                 }
                 System.out.println("Initial state: " + viewMethods.initialStates);
+                viewMethods.drawScene(viewMethods.canvas.getGraphicsContext2D(), viewMethods.maxX, viewMethods.maxY);
+
                 break;
             case ROBOT_IDLE:
                 System.out.println("View: Robot " + event.getRobotId() + " is idle.");

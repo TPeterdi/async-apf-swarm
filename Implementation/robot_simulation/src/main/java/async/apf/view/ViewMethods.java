@@ -37,6 +37,9 @@ public class ViewMethods {
     private double scaleFactor = 1.0;
     private final int cellSize = 20;
 
+    public Canvas canvas;
+    public int maxX;
+    public int maxY;
     public Button simulationStartButton;
     public Boolean isSimulationRunning = false;
     public Boolean isSimulationFinished = false;
@@ -155,10 +158,9 @@ public class ViewMethods {
         Stage newWindow = new Stage();
         newWindow.setTitle("Simulation");
 
-        int maxX = initialStates.stream().mapToInt(Coordinate::getX).max().orElse(0) + 1;
-        int maxY = initialStates.stream().mapToInt(Coordinate::getY).max().orElse(0) + 4;
+        calculateMaxCoordinates();
 
-        Canvas canvas = new Canvas(400, 400);
+        this.canvas = new Canvas(400, 400);
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
         offsetX = canvas.getWidth() / 2 - (maxX * cellSize) / 2.0;
@@ -257,7 +259,7 @@ public class ViewMethods {
 
 
 
-    private void drawScene(GraphicsContext gc, int maxX, int maxY) {
+    public void drawScene(GraphicsContext gc, int maxX, int maxY) {
         gc.clearRect(0, 0, gc.getCanvas().getWidth(), gc.getCanvas().getHeight());
 
         gc.save();
@@ -295,6 +297,16 @@ public class ViewMethods {
 
             gc.fillOval(x - pointRadius / 2.0, y - pointRadius / 2.0, pointRadius, pointRadius);
         }
+    }
+
+    private void calculateMaxCoordinates() {
+        int initialMaxX = initialStates.stream().mapToInt(Coordinate::getX).max().orElse(0);
+        int targetMaxX = targetStates.stream().mapToInt(Coordinate::getX).max().orElse(0);
+        this.maxX = Math.max(initialMaxX, targetMaxX) + 1;
+
+        int initialMaxY = initialStates.stream().mapToInt(Coordinate::getY).max().orElse(0);
+        int targetMaxY = targetStates.stream().mapToInt(Coordinate::getY).max().orElse(0);
+        this.maxY = Math.max(initialMaxY, targetMaxY) + 4;
     }
 
     private void checkStates() {
