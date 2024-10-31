@@ -11,8 +11,6 @@ import async.apf.model.events.SimulationEvent;
 import async.apf.model.exceptions.InvalidInputException;
 
 public class Model implements IModel {
-    private boolean isSimulationRunning = false;
-
     private List<Coordinate> loadedStartingConfiguration;
     private List<Coordinate> loadedTargetPattern;
 
@@ -51,32 +49,65 @@ public class Model implements IModel {
 
     @Override
     public void startSimulation() throws InvalidInputException {
-        if (this.isSimulationRunning) return;
-
-        this.isSimulationRunning = true;
+        if (this.currentSimulation != null &&
+            this.currentSimulation.hasBegun()) return;
         
-        this.currentSimulation = new Simulation(this.simulationEventEmitter, this.loadedStartingConfiguration, this.loadedTargetPattern);
+        initializeSimulation();
+        this.currentSimulation.begin();
+    }
+
+    private void initializeSimulation() throws InvalidInputException {
+        List<Coordinate> startingConfigurationCopy = new ArrayList<>();
+        for (Coordinate pos : this.loadedStartingConfiguration) {
+            startingConfigurationCopy.add(new Coordinate(pos.getX(), pos.getY()));
+        }
+        List<Coordinate> targetPatternCopy = new ArrayList<>();
+        for (Coordinate pos : this.loadedTargetPattern) {
+            targetPatternCopy.add(new Coordinate(pos.getX(), pos.getY()));
+        }
+
+        if (this.currentSimulation != null) {
+            this.simulationEventEmitter.removeEventListener(this.currentSimulation);
+        }
+        this.currentSimulation = new Simulation(this.simulationEventEmitter, startingConfigurationCopy, targetPatternCopy);
         this.currentSimulation.setDelay(this.currentDelay);
         this.simulationEventEmitter.addEventListener(this.currentSimulation);
-        this.currentSimulation.start();
     }
 
     @Override
-    public void continueSimulation() {
-
+    public void resumeSimulation() {
+        if (this.currentSimulation.isPaused()) {
+            this.currentSimulation.resume();
+        }
     }
+
     @Override
     public void pauseSimulation() {
-
+        if (this.currentSimulation.isRunning()) {
+            this.currentSimulation.pause();
+        }
     }
 
+    @Override
+    public void restartSimulation() {
+        try {
+            initializeSimulation();
+        }
+        catch (InvalidInputException e) {
+            e.printStackTrace();
+        }
+        this.currentSimulation.begin();
+    }
 
     @Override
+    @SuppressWarnings("UseSpecificCatch")
     public void endSimulation() {
-        if (this.currentSimulation == null) return;
-        if (!this.isSimulationRunning) return;
-
-        this.currentSimulation.stop();
+        try {
+            this.initializeSimulation();
+        }
+        catch (Exception e) {
+            System.err.println("Unexpected error occurred during reinitialization of simulation: " + e.getMessage());
+        }
     }
 
     @Override
@@ -84,7 +115,6 @@ public class Model implements IModel {
         if (event instanceof SimulationEvent simulationEvent && 
             simulationEvent.getEventType() == SimulationEventType.SIMULATION_END)
         {
-            this.isSimulationRunning = false;
         }
     }
     

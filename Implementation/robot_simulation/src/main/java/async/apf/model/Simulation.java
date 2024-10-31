@@ -21,8 +21,9 @@ public class Simulation implements IEventListener {
 
     private final List<Robot> robots;
 
-    private boolean working = false;
-    private boolean isStopped = false;
+    private boolean hasBegun = false;
+    private boolean isPaused = false;
+    private boolean completed = false;
 
     private final Thread simulationThread;
 
@@ -50,15 +51,15 @@ public class Simulation implements IEventListener {
         }
 
         this.simulationThread = new Thread(() -> {
-            while (this.working) {
-                if (this.isStopped) continue;
+            while (!this.completed) {
+                if (this.isPaused) continue;
 
                 int randomIndex = this.scheduler.pickNext();
                 Robot pickedRobot = this.robots.get(randomIndex);
                 try {
                     pickedRobot.activate(randomIndex, this.delay);
-
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     System.err.println(ex.getMessage());
                 }
             }
@@ -70,18 +71,34 @@ public class Simulation implements IEventListener {
         this.delay = delay;
     }
 
+    public void begin() {
+        if (this.hasBegun) return;
 
-    public void start() {
-        this.isStopped = false;
-        if (this.working) return;
-
-        this.working = true;
+        this.hasBegun = true;
+        this.isPaused = false;
+        this.completed = false;
         globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_START));
         this.simulationThread.start();
     }
 
-    public void stop() {
-        this.isStopped = true;
+    public void resume() {
+        this.isPaused = false;
+    }
+
+    public void pause() {
+        this.isPaused = true;
+    }
+
+    public boolean hasBegun() {
+        return hasBegun;
+    }
+
+    public boolean isRunning() {
+        return hasBegun && !isPaused;
+    }
+
+    public boolean isPaused() {
+        return hasBegun && isPaused;
     }
 
     private void moveRobotBy(int robotIndex, int dx, int dy) {
@@ -99,10 +116,6 @@ public class Simulation implements IEventListener {
             translatedCoordinates.add(coordinate.translate(robotCoordinate));
         }
         return translatedCoordinates;
-    }
-
-    public boolean isRunning() {
-        return working && !isStopped;
     }
 
     @Override
@@ -130,7 +143,7 @@ public class Simulation implements IEventListener {
                 case MOVE_SOUTH -> moveRobotBy(index, 0, -1);
                 case MOVE_WEST  -> moveRobotBy(index, -1, 0);
                 case IDLE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_IDLE));
-                case PATTERN_COMPLETE -> this.working = false;
+                case PATTERN_COMPLETE -> this.completed = true;
                 default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
             }
         }

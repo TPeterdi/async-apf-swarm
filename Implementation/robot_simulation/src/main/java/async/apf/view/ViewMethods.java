@@ -272,7 +272,7 @@ public class ViewMethods {
                 isSimulationRunning = true;
                 isSimulationStarted = true;
                 try {
-                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_START));
+                    simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_RESTART));
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }

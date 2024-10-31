@@ -2,10 +2,9 @@ package async.apf.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
 
 import async.apf.model.enums.Cardinal;
 import async.apf.model.enums.RobotEventType;
@@ -15,13 +14,12 @@ import async.apf.model.events.RobotEvent;
 public class Robot {
     private final EventEmitter globalEventEmitter;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final ReentrantLock activationLock = new ReentrantLock();
 
     private boolean active = false;
     private int currentId;
 
     // Prevents COMPUTE cycle to start ahead of time
-    private CountDownLatch lookLatch;
+    private CompletableFuture lookFuture;
 
     // These get evaluated after each LOOK phase
     private RobotOrientation currentConfiguration;
@@ -34,36 +32,29 @@ public class Robot {
         this.globalEventEmitter = globalEventEmitter;
     }
 
-    public void activate(int currentId, int currentDelay) {
-        activationLock.lock();
-        try {
-            if (this.active) {
-                this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
-                return;
-            }
-            this.active = true;
-            this.currentId = currentId;
-            this.currentDelay = currentDelay;
-            this.executorService.submit(this::cycleLoop);
+    public synchronized void activate(int currentId, int currentDelay) {
+        if (this.active) {
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
+            return;
         }
-        finally {
-            activationLock.unlock();
-        }
+        this.active = true;
+        this.currentId = currentId;
+        this.currentDelay = currentDelay;
+        this.executorService.submit(this::cycleLoop);
     }
 
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
-        lookLatch.countDown();
+        this.lookFuture.complete(null);
     }
 
-    private void cycleLoop() {
-        activationLock.lock();
+    private synchronized void cycleLoop() {
         try {
             // LOOK
-            this.lookLatch = new CountDownLatch(1);
+            this.lookFuture = new CompletableFuture();
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
-            awaitLooking();
+            this.lookFuture.get();
             awaitArtificialDelay();
 
             // COMPUTE
@@ -81,22 +72,11 @@ public class Robot {
         catch (Exception ex) {
             System.err.println(ex.getMessage());
         }
-        finally {
-            activationLock.unlock();
-        }
     }
 
     private void awaitArtificialDelay() throws InterruptedException {
         if (this.currentDelay > 0) {
             Thread.sleep(this.currentDelay);
-        }
-    }
-
-    private void awaitLooking() {
-        try {
-            lookLatch.await();
-        } catch (Exception e) {
-            Thread.currentThread().interrupt(); // Restore interrupt status
         }
     }
 

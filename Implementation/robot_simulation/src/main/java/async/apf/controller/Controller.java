@@ -8,10 +8,8 @@ import async.apf.interfaces.IModel;
 import async.apf.interfaces.IView;
 import async.apf.model.Coordinate;
 import async.apf.model.events.SimulationEvent;
-import async.apf.view.View;
 import async.apf.view.events.ViewCoordinatesEvent;
 import async.apf.view.events.ViewSimulationEvent;
-import javafx.application.Application;
 
 public class Controller implements IController {
     private final IView view;
@@ -20,11 +18,6 @@ public class Controller implements IController {
     public Controller(IModel model, IView view) {
         this.model = model;
         this.view = view;
-    }
-
-    @Override
-    public void startApp(String[] args) {
-        Application.launch(View.class, args);
     }
 
     @Override
@@ -48,23 +41,28 @@ public class Controller implements IController {
     }
 
     @Override
-    public void startSimulation() throws Exception {
+    public void beginSimulation() throws Exception {
         this.model.startSimulation();
     }
 
     @Override
-    public void continueSimulation() {
-        this.model.stopSimulation();
+    public void resumeSimulation() {
+        this.model.resumeSimulation();
     }
 
     @Override
     public void pauseSimulation() {
-        this.model.stopSimulation();
+        this.model.pauseSimulation();
     }
 
     @Override
     public void endSimulation() {
-        this.model.stopSimulation();
+        this.model.endSimulation();
+    }
+
+    @Override
+    public void restartSimulation() {
+        this.model.restartSimulation();
     }
 
     @Override
@@ -84,14 +82,17 @@ public class Controller implements IController {
             switch (viewSimulationEvent.getEventType()) {
                 case SIMULATION_START -> {
                     try {
-                        startSimulation();
+                        beginSimulation();
                     } catch (Exception e) {
                         System.err.println(e.getMessage());
                     }
                 }
-                case SIMULATION_CONTINUE  -> continueSimulation();
+                case SIMULATION_CONTINUE  -> resumeSimulation();
                 case SIMULATION_PAUSE  -> pauseSimulation();
                 case SIMULATION_END -> endSimulation();
+                case SIMULATION_RESTART -> {
+                    restartSimulation();
+                }
                 case SET_SIMULATION_DELAY -> setSimulationDelay(viewSimulationEvent.getDelay());
                 default -> throw new IllegalStateException("Unexpected event type: " + viewSimulationEvent.getEventType());
             }

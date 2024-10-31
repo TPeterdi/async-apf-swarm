@@ -14,6 +14,11 @@ public class EventEmitter {
         listeners.add(listener);
     }
 
+    // Method to remove an event listener
+    public void removeEventListener(IEventListener listener) {
+        listeners.remove(listener);
+    }
+
     // Method to emit an event
     public void emitEvent(IEvent event) {
         // Notify all listeners about the event
