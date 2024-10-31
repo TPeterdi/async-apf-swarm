@@ -99,7 +99,7 @@ public class View extends Application implements IView {
                     }
                 }
                 System.out.println("Initial state: " + viewMethods.initialStates);
-                viewMethods.drawScene(viewMethods.canvas.getGraphicsContext2D(), viewMethods.maxX, viewMethods.maxY);
+                viewMethods.refreshCanvas();
 
                 break;
             case ROBOT_IDLE:
