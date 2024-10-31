@@ -28,12 +28,13 @@ public class Robot {
     private ConfigurationOrientation targetPattern;
 
     private Cardinal nextMove = null;
+    private int currentDelay;
 
     public Robot(EventEmitter globalEventEmitter) {
         this.globalEventEmitter = globalEventEmitter;
     }
 
-    public void activate(int currentId) {
+    public void activate(int currentId, int currentDelay) {
         activationLock.lock();
         try {
             if (this.active) {
@@ -42,6 +43,7 @@ public class Robot {
             }
             this.active = true;
             this.currentId = currentId;
+            this.currentDelay = currentDelay;
             this.executorService.submit(this::cycleLoop);
         }
         finally {
@@ -62,18 +64,31 @@ public class Robot {
             this.lookLatch = new CountDownLatch(1);
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
             awaitLooking();
+            awaitArtificialDelay();
 
             // COMPUTE
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.COMPUTE, this.currentId));
             computeNextMove();
+            awaitArtificialDelay();
 
             // MOVE
             signalMovement();
+            awaitArtificialDelay();
 
             resetState();
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentId));
-        } finally {
+        }
+        catch (Exception ex) {
+            System.err.println(ex.getMessage());
+        }
+        finally {
             activationLock.unlock();
+        }
+    }
+
+    private void awaitArtificialDelay() throws InterruptedException {
+        if (this.currentDelay > 0) {
+            Thread.sleep(this.currentDelay);
         }
     }
 

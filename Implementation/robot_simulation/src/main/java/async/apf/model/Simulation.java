@@ -56,10 +56,7 @@ public class Simulation implements IEventListener {
                 int randomIndex = this.scheduler.pickNext();
                 Robot pickedRobot = this.robots.get(randomIndex);
                 try {
-                    pickedRobot.activate(randomIndex);
-
-                    if (this.delay > 0)
-                        Thread.sleep(this.delay);
+                    pickedRobot.activate(randomIndex, this.delay);
 
                 } catch (Exception ex) {
                     System.err.println(ex.getMessage());
