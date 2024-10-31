@@ -1,6 +1,6 @@
 package async.apf.view.enums;
 
-public enum ViewEventType {
+public enum ViewEventTypeR {
     LOAD_INITIAL_CONFIG,
     LOAD_TARGET_CONFIG,
     SIMULATION_START,
