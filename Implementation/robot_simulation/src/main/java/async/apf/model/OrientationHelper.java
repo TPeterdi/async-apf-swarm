@@ -12,17 +12,9 @@ public final class OrientationHelper {
     private OrientationHelper() {}
 
     public static RobotOrientation orientRobotAndConfiguration(List<Coordinate> configuration) {
-        Coordinate selfPosition = null;
-
-        // Iterate over the points to find the min and max x, y values
-        for (Coordinate point : configuration) {
-            if (point.getX() == 0 && point.getY() == 0) {
-                selfPosition = point;
-                break;
-            }
-        }
-
-        return new RobotOrientation(orientConfiguration(configuration), selfPosition);
+        ConfigurationOrientation orientedConfiguration = orientConfiguration(configuration);
+        // TODO find self position
+        return new RobotOrientation(orientedConfiguration, null);
     }
 
     public static ConfigurationOrientation orientConfiguration(List<Coordinate> configuration) {
@@ -54,37 +46,22 @@ public final class OrientationHelper {
 
         // Rotate the configuration such that it's a "tall" rectangle (height >= width)
         if (width > height) {
-            Coordinate corner = new Coordinate(-height + 1, 0);
-            for (Coordinate point : configuration) {
-                point.rotateByCardinal(Cardinal.WEST);
-                point.translateInPlace(corner);
-            }
+            makeConfigurationTall(height, configuration);
             int tmp = height;
             height = width;
             width = tmp;
         }
 
         Boolean[][] positionMatrix = initializePositionMatrix(width, height, configuration);
+        return findBestOrientation(width, height, positionMatrix);
+    }
 
-        ConfigurationOrientation orientation = findBestOrientation(width, height, positionMatrix);
-
-        // Transform configuration according to the best orientation.
-        Cardinal cardinalOrientation = orientation.getOrientation();
+    private static void makeConfigurationTall(int height, List<Coordinate> configuration) {
+        Coordinate corner = new Coordinate(-height + 1, 0);
         for (Coordinate point : configuration) {
-            point.rotateByCardinal(cardinalOrientation);
-            switch (cardinalOrientation) {
-                case WEST ->  point.translateInPlace(new Coordinate(-height + 1, 0        ));
-                case SOUTH -> point.translateInPlace(new Coordinate(-width  + 1, -height + 1));
-                case EAST ->  point.translateInPlace(new Coordinate(0        , -width  + 1));
-                default -> {
-                }
-            }
-            if (orientation.isXMirrored()) {
-                point.setX(width - point.getX() - 1);
-            }
+            point.rotateByCardinal(Cardinal.WEST);
+            point.translateInPlace(corner);
         }
-
-        return orientation;
     }
 
     public static Coordinate indexToCoordinate(int index, int width) {
