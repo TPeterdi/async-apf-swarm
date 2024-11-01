@@ -335,7 +335,7 @@ public class Robot {
         (
             (
                 checkC2() &&
-                checkC3()
+                !checkC3()
             )
             ||
             !checkC2()
