@@ -190,6 +190,9 @@ public class Robot {
     private void  checkC0() {
         c0 = currentConfiguration.equals(targetPattern);
     }
+    /**
+     * C = C_target
+     */
     private boolean getC0() {
         if (c0 == null) checkC0();
         return c0;
@@ -200,6 +203,9 @@ public class Robot {
     private void checkC1() {
         c1 = currentConfiguration.primeEquals(targetPattern);
     }
+    /**
+     * C' = C'_target
+     */
     private boolean getC1() {
         if (c1 == null) checkC1();
         return c1;
@@ -210,6 +216,9 @@ public class Robot {
     private void checkC2() {
         c2 = currentConfiguration.primePrimeEquals(targetPattern);
     }
+    /**
+     * C'' = C''_target
+     */
     private boolean getC2() {
         if (c2 == null) checkC2();
         return c2;
@@ -220,6 +229,9 @@ public class Robot {
     private void checkC3() {
         c3 = currentConfiguration.getTailPosition().getX() == targetPattern.getTailPosition().getX();
     }
+    /**
+     * x-coordinate of the tail = x-coordinate of t_target
+     */
     private boolean getC3() {
         if (c3 == null) checkC3();
         return c3;
@@ -252,6 +264,10 @@ public class Robot {
 
         c4 = true;
     }
+    /**
+     * There is neither any robot except the tail nor any target positions
+     * on or above H_t, where H_t is the horizontal line containing the tail
+     */
     private boolean getC4() {
         if (c4 == null) checkC4();
         return c4;
@@ -262,6 +278,9 @@ public class Robot {
     private void checkC5() {
         c5 = currentConfiguration.getTailPosition().getY() % 2 == 1;
     }
+    /**
+     * y-coordinate of the tail is odd
+     */
     private boolean getC5() {
         if (c5 == null) checkC5();
         return c5;
@@ -272,6 +291,9 @@ public class Robot {
     private void checkC6() {
         c6 = currentConfiguration.getWidth() != currentConfiguration.getHeight();
     }
+    /**
+     * SER of C is not a square
+     */
     private boolean getC6() {
         if (c6 == null) checkC6();
         return c6;
@@ -304,6 +326,10 @@ public class Robot {
 
         c7 = true;
     }
+    /**
+     * There is neither any robot except the tail nor any target positions
+     * on or at the right of V_t, where V_t is the vertical line containing the tail
+     */
     private boolean getC7() {
         if (c7 == null) checkC7();
         return c7;
@@ -315,6 +341,9 @@ public class Robot {
         c8 = currentConfiguration.getHeadPosition().getX() == 0 &&
              currentConfiguration.getHeadPosition().getY() == 0;
     }
+    /**
+     * The head is at origin
+     */
     private boolean getC8() {
         if (c8 == null) checkC8();
         return c8;
@@ -334,6 +363,10 @@ public class Robot {
         copy.getLast().setY(currentConfiguration.getHeight() - 1);
         c9 = !OrientationHelper.isSymmetric(copy);
     }
+    /**
+     * If the tail and the head are relocated respectively at C and A, then
+     * the new configuration remains asymmetric
+     */
     private boolean getC9() {
         if (c9 == null) checkC9();
         return c9;
@@ -350,13 +383,17 @@ public class Robot {
             .max()
             .orElseThrow();
         for (Coordinate position : primeCoordinates) {
-            if (!currentConfiguration.isCoordinateMarked(primeMaxX - position.getX(), position.getY())) {
+            Coordinate mirrored = new Coordinate(primeMaxX - position.getX(), position.getY());
+            if (!currentConfiguration.getCoordinates().contains(mirrored)) {
                 c10 = false;
                 return;
             }
         }
         c10 = true;
     }
+    /**
+     * C′ has a symmetry with respect to a vertical line
+     */
     private boolean getC10() {
         if (c10 == null) checkC10();
         return c10;

@@ -121,16 +121,6 @@ public class ConfigurationOrientation {
         return true;
     }
 
-    public boolean isCoordinateMarked(int x, int y) {
-        if (x < 0 || x >= width) return false;
-        if (y < 0 || y >= height) return false;
-
-        int row = y / width;
-        int xValue = (row % 2 == 0) ? width - x - 1 : x;
-        int linearIndex = row * width + xValue;
-        return binaryRepresentation.get(linearIndex);
-    }
-
     public List<Coordinate> getCoordinates() {
         return coordinates;
     }
