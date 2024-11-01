@@ -198,6 +198,9 @@ public class ConfigurationOrientation {
             }
             rotatedBinaryRepresentation.add(binaryRepresentation.get(ti));
         }
+        int tmp = height;
+        height = width;
+        width = tmp;
     }
 
     private int cardinalValue(Cardinal cardinal) {
