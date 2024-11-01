@@ -45,6 +45,7 @@ public class Robot {
 
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
+        // TODO: this won't change during the simulation, do this calculation on the Simulation object instead and store it there!
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
         this.lookFuture.complete(null);
     }
@@ -173,32 +174,50 @@ public class Robot {
 
     // #region CONDITION CHECKS
     // C = C_target
-    private boolean checkC0() {
-        boolean result = currentConfiguration.equals(targetPattern);
-        return result;
+
+    private Boolean c0;
+    private void  checkC0() {
+        c0 = currentConfiguration.equals(targetPattern);
+    }
+    private boolean getC0() {
+        if (c0 == null) checkC0();
+        return c0;
     }
 
+    private Boolean c1;
     // C' = C'_target
-    private boolean checkC1() {
-        boolean result = currentConfiguration.primeEquals(targetPattern);
-        return result;
+    private void checkC1() {
+        c1 = currentConfiguration.primeEquals(targetPattern);
+    }
+    private boolean getC1() {
+        if (c1 == null) checkC1();
+        return c1;
     }
 
+    private Boolean c2;
     // C'' = C''_target
-    private boolean checkC2() {
-        boolean result = currentConfiguration.primePrimeEquals(targetPattern);
-        return result;
+    private void checkC2() {
+        c2 = currentConfiguration.primePrimeEquals(targetPattern);
+    }
+    private boolean getC2() {
+        if (c2 == null) checkC2();
+        return c2;
     }
 
+    private Boolean c3;
     // x-coordinate of the tail = x-coordinate of t_target
-    private boolean checkC3() {
-        boolean result = currentConfiguration.getTailPosition().getX() == targetPattern.getTailPosition().getX();
-        return result;
+    private void checkC3() {
+        c3 = currentConfiguration.getTailPosition().getX() == targetPattern.getTailPosition().getX();
+    }
+    private boolean getC3() {
+        if (c3 == null) checkC3();
+        return c3;
     }
 
+    private Boolean c4;
     // There is neither any robot except the tail nor any target positions
     // on or above H_t, where H_t is the horizontal line containing the tail
-    private boolean checkC4() {
+    private void checkC4() {
         Coordinate tailCoordinate = currentConfiguration.getTailPosition();
         int yHt = tailCoordinate.getY();
 
@@ -208,34 +227,49 @@ public class Robot {
                 robotCoordinate.equals(tailCoordinate))
                 continue;
 
-            return false;
+            c4 = false;
+            return;
         }
         // Look for target positions
         for (Coordinate targetCoordinate : targetPattern.getCoordinates()) {
             if (targetCoordinate.getY() < yHt)
                 continue;
 
-            return false;
+            c4 = false;
+            return;
         }
 
-        return true;
+        c4 = true;
+    }
+    private boolean getC4() {
+        if (c4 == null) checkC4();
+        return c4;
     }
 
+    private Boolean c5;
     // y-coordinate of the tail is odd
-    private boolean checkC5() {
-        boolean result = currentConfiguration.getTailPosition().getY() % 2 == 1;
-        return result;
+    private void checkC5() {
+        c5 = currentConfiguration.getTailPosition().getY() % 2 == 1;
+    }
+    private boolean getC5() {
+        if (c5 == null) checkC5();
+        return c5;
     }
 
+    private Boolean c6;
     // SER of C is not a square
-    private boolean checkC6() {
-        boolean result = currentConfiguration.getWidth() != currentConfiguration.getHeight();
-        return result;
+    private void checkC6() {
+        c6 = currentConfiguration.getWidth() != currentConfiguration.getHeight();
+    }
+    private boolean getC6() {
+        if (c6 == null) checkC6();
+        return c6;
     }
 
+    private Boolean c7;
     // There is neither any robot except the tail nor any target positions
     // on or at the right of V_t, where V_t is the vertical line containing the tail
-    private boolean checkC7() {
+    private void checkC7() {
         Coordinate tailCoordinate = currentConfiguration.getTailPosition();
         int xVt = tailCoordinate.getX();
 
@@ -245,30 +279,40 @@ public class Robot {
                 robotCoordinate.equals(tailCoordinate))
                 continue;
 
-            return false;
+            c7 = false;
+            return;
         }
         // Look for target positions
         for (Coordinate targetCoordinate : targetPattern.getCoordinates()) {
             if (targetCoordinate.getX() < xVt)
                 continue;
 
-            return false;
+            c7 = false;
+            return;
         }
 
-        return true;
+        c7 = true;
+    }
+    private boolean getC7() {
+        if (c7 == null) checkC7();
+        return c7;
     }
 
+    private Boolean c8;
     // The head is at origin
-    private boolean checkC8() {
-        boolean result =
-            currentConfiguration.getHeadPosition().getX() == 0
-            && currentConfiguration.getHeadPosition().getY() == 0;
-        return result;
+    private void checkC8() {
+        c8 = currentConfiguration.getHeadPosition().getX() == 0 &&
+             currentConfiguration.getHeadPosition().getY() == 0;
+    }
+    private boolean getC8() {
+        if (c8 == null) checkC8();
+        return c8;
     }
 
+    private Boolean c9;
     // If the tail and the head are relocated respectively at C and A, then
     // the new configuration remains asymmetric
-    private boolean checkC9() {
+    private void checkC9() {
         List<Coordinate> copy = new ArrayList<>();
         for (Coordinate pos : currentConfiguration.getCoordinates()) {
             copy.add(new Coordinate(pos.getX(), pos.getY()));
@@ -277,26 +321,34 @@ public class Robot {
         copy.getFirst().setY(0);
         copy.getLast().setX(currentConfiguration.getWidth() - 1);
         copy.getLast().setY(currentConfiguration.getHeight() - 1);
-        boolean result = !OrientationHelper.isSymmetric(copy);
-        return result;
+        c9 = !OrientationHelper.isSymmetric(copy);
+    }
+    private boolean getC9() {
+        if (c9 == null) checkC9();
+        return c9;
     }
 
+    private Boolean c10;
     // C′ has a symmetry with respect to a vertical line
-    private boolean checkC10() {
+    private void checkC10() {
         List<Coordinate> primeCoordinates = currentConfiguration.getCoordinates()
             .subList(0, currentConfiguration.getCoordinates().size() - 1);
-        int primeWidth = primeCoordinates
+        int primeMaxX = primeCoordinates
             .stream()
             .mapToInt(Coordinate::getX)
             .max()
             .orElseThrow();
-        for (int idx = 0; idx < primeWidth; idx++) {
-            Coordinate position = currentConfiguration.getCoordinates().get(idx);
-            if (!currentConfiguration.isCoordinateMarked(primeWidth - position.getX() -1, position.getY())) {
-                return false;
+        for (Coordinate position : primeCoordinates) {
+            if (!currentConfiguration.isCoordinateMarked(primeMaxX - position.getX(), position.getY())) {
+                c10 = false;
+                return;
             }
         }
-        return true;
+        c10 = true;
+    }
+    private boolean getC10() {
+        if (c10 == null) checkC10();
+        return c10;
     }
     // #endregion Initialization
 
@@ -305,14 +357,14 @@ public class Robot {
     private boolean checkForPhaseI() {
         return
         !(
-            checkC4() &&
-            checkC5() &&
-            checkC6()
+            getC4() &&
+            getC5() &&
+            getC6()
         )
         &&
         !(
-            checkC1() &&
-            checkC3()
+            getC1() &&
+            getC3()
         );
     }
     private void doPhaseI() {
@@ -326,19 +378,19 @@ public class Robot {
     private boolean checkForPhaseII() {
         return 
         (
-            checkC4() &&
-            checkC5() &&
-            checkC6() &&
-            !checkC8()
+            getC4() &&
+            getC5() &&
+            getC6() &&
+            !getC8()
         )
         &&
         (
             (
-                checkC2() &&
-                !checkC3()
+                getC2() &&
+                !getC3()
             )
             ||
-            !checkC2()
+            !getC2()
         );
     }
     private void doPhaseII() {
@@ -351,17 +403,17 @@ public class Robot {
     ///////////////////////// PHASE III /////////////////////////
     private boolean checkForPhaseIII() {
         return
-        checkC4() &&
-        checkC5() &&
-        checkC6() &&
-        checkC8() &&
-        !checkC2() &&
-        !checkC7();
+        getC4() &&
+        getC5() &&
+        getC6() &&
+        getC8() &&
+        !getC2() &&
+        !getC7();
     }
     private void doPhaseIII() {
         // The aim of this phase is to make C7 true
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
-            if (checkC10()) {
+            if (getC10()) {
                 // TAIL moves left or upwards in accordance with
                 // m > n + 1 or m = n + 1
                 if (currentConfiguration.getHeight() > currentConfiguration.getWidth() + 1) {
@@ -372,7 +424,7 @@ public class Robot {
                 }
             }
             else {
-                if (checkC9()) {
+                if (getC9()) {
                     // TAIL moves right or upwards in accordance with
                     // m > n + 1 or m = n + 1
                     // (dimension of the current SER is m × n with m ≥ n)
@@ -394,12 +446,12 @@ public class Robot {
     ///////////////////////// PHASE IV /////////////////////////
     private boolean checkForPhaseIV() {
         return
-        checkC4() &&
-        checkC5() &&
-        checkC6() &&
-        checkC7() &&
-        checkC8() &&
-        !checkC2();
+        getC4() &&
+        getC5() &&
+        getC6() &&
+        getC7() &&
+        getC8() &&
+        !getC2();
     }
     private void doPhaseIV() {
         Coordinate selfPosition = currentConfiguration.getSelfPosition();
@@ -425,17 +477,17 @@ public class Robot {
     ///////////////////////// PHASE V /////////////////////////
     private boolean checkForPhaseV() {
         return
-        checkC2() &&
-        checkC4() &&
-        checkC5() &&
-        checkC6() &&
-        checkC8() &&
-        !checkC3();
+        getC2() &&
+        getC4() &&
+        getC5() &&
+        getC6() &&
+        getC8() &&
+        !getC3();
     }
     private void doPhaseV() {
         // TAIL moves horizontally to make C3 true
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
-            if (checkC10()) {
+            if (getC10()) {
                 int maxX = Integer.MIN_VALUE;
                 
                 // Iterate through the list except the last element
@@ -476,12 +528,12 @@ public class Robot {
     ///////////////////////// PHASE VI /////////////////////////
     private boolean checkForPhaseVI() {
         return
-        !checkC1() &&
-        checkC2() &&
-        checkC3() &&
-        checkC4() &&
-        checkC5() &&
-        checkC6();
+        !getC1() &&
+        getC2() &&
+        getC3() &&
+        getC4() &&
+        getC5() &&
+        getC6();
     }
     private void doPhaseVI() {
         // HEAD moves horizontally to reach h_target
@@ -495,9 +547,9 @@ public class Robot {
     ///////////////////////// PHASE VII /////////////////////////
     private boolean checkForPhaseVII() {
         return
-        !checkC0() &&
-        checkC1() &&
-        checkC3();
+        !getC0() &&
+        getC1() &&
+        getC3();
     }
     private void doPhaseVII() {
         // TAIL moves vertically to reach t_target
