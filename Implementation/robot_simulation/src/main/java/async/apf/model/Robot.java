@@ -45,8 +45,8 @@ public class Robot {
 
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
-        // TODO: this won't change during the simulation, do this calculation on the Simulation object instead and store it there!
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
+        this.targetPattern.changeOrientation(currentConfiguration.getOrientation(), currentConfiguration.isXMirrored());
         this.lookFuture.complete(null);
     }
 
@@ -465,7 +465,7 @@ public class Robot {
                 // TAIL moves left or upwards in accordance with
                 // m > n + 1 or m = n + 1
                 if (currentConfiguration.getHeight() > currentConfiguration.getWidth() + 1) {
-                    this.nextMove = Cardinal.WEST;
+                    this.nextMove = Cardinal.EAST;
                 }
                 else {
                     this.nextMove = Cardinal.NORTH;
@@ -536,20 +536,20 @@ public class Robot {
         // TAIL moves horizontally to make C3 true
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             if (getC10()) {
-                int maxX = Integer.MIN_VALUE;
+                int maxPrimeX = Integer.MIN_VALUE;
                 
                 // Iterate through the list except the last element
                 for (int i = 0; i < currentConfiguration.getCoordinates().size() - 1; i++) {
                     Coordinate p = currentConfiguration.getCoordinates().get(i);
-                    maxX = Math.max(maxX, p.getX());
+                    maxPrimeX = Math.max(maxPrimeX, p.getX());
                 }
                 int tPrimeX = targetPattern.getTailPosition().getX();
                 int tX = currentConfiguration.getTailPosition().getX();
-                int cPrimePrimeX = maxX;
-                int eX = maxX / 2;
+                int cPrimePrimeX = maxPrimeX;
+                int eX = maxPrimeX / 2;
                 
                 if ((tX > cPrimePrimeX && tPrimeX > cPrimePrimeX) ||
-                        (tX <= eX && tPrimeX <= eX)) {
+                    (tX <= eX && tPrimeX <= eX)) {
                     if (tX > tPrimeX) {
                         this.nextMove = Cardinal.WEST;
                     }

@@ -83,10 +83,10 @@ public class View extends Application implements IView {
     private void handleRobotEvent(SimulationEvent event) {
         switch (event.getEventType()) {
             case ROBOT_LOOKING:
-                System.out.println("View: Robot " + event.getRobotId() + " is looking around.");
+                // System.out.println("View: Robot " + event.getRobotId() + " is looking around.");
                 break;
             case ROBOT_COMPUTING:
-                System.out.println("View: Robot " + event.getRobotId() + " is computing data.");
+                // System.out.println("View: Robot " + event.getRobotId() + " is computing data.");
                 break;
             case ROBOT_MOVING:
                 System.out.println("View: Robot " + event.getRobotId() + " is moving from (" +
@@ -99,12 +99,12 @@ public class View extends Application implements IView {
                         break;
                     }
                 }
-                System.out.println("Initial state: " + viewMethods.initialStates);
+                // System.out.println("State: " + viewMethods.initialStates);
                 viewMethods.refreshCanvas();
 
                 break;
             case ROBOT_IDLE:
-                System.out.println("View: Robot " + event.getRobotId() + " is idle.");
+                // System.out.println("View: Robot " + event.getRobotId() + " is idle.");
                 break;
             default:
                 break;

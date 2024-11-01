@@ -1,6 +1,7 @@
 package async.apf.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -8,12 +9,12 @@ import java.util.stream.Collectors;
 import async.apf.model.enums.Cardinal;
 
 public class ConfigurationOrientation {
-    private final List<Coordinate> coordinates;
-    private final List<Boolean> binaryRepresentation;
-    private final Cardinal orientation;
-    private final boolean xMirrored;
-    private final int width;
-    private final int height;
+    private List<Coordinate> coordinates;
+    private List<Boolean> binaryRepresentation;
+    private Cardinal orientation;
+    private boolean xMirrored;
+    private int width;
+    private int height;
 
     public ConfigurationOrientation(List<Boolean> binaryRepresentation, Cardinal orientation, boolean xMirrored, int width, int height) {
         this.binaryRepresentation = binaryRepresentation;
@@ -22,10 +23,14 @@ public class ConfigurationOrientation {
         this.width = width;
         this.height = height;
 
+        createCoordinates();
+    }
+
+    private void createCoordinates() {
         this.coordinates = new ArrayList<>();
         for (int idx = 0; idx < binaryRepresentation.size(); idx++) {
             if (Boolean.TRUE.equals(binaryRepresentation.get(idx))) {
-                coordinates.add(OrientationHelper.indexToCoordinate(idx, width));
+                this.coordinates.add(OrientationHelper.indexToCoordinate(idx, width));
             }
         }
     }
@@ -123,5 +128,90 @@ public class ConfigurationOrientation {
 
     public List<Coordinate> getCoordinates() {
         return coordinates;
+    }
+
+    public void changeOrientation(Cardinal newCardinal, boolean mirroredState) {
+        changeMirroredState(mirroredState);
+        rotateToCardinal(newCardinal);
+        createCoordinates();
+    }
+
+    private void changeMirroredState(boolean target) {
+        if (target != xMirrored) mirror();
+    }
+
+    private void mirror() {
+        this.xMirrored = !this.xMirrored;
+
+        List<Boolean> flippedBinaryRepresentation = new ArrayList<>();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int tx = y % 2 == 0
+                    ? width - x - 1
+                    : x;
+                flippedBinaryRepresentation.add(binaryRepresentation.get(y * width + tx));
+            }
+        }
+        binaryRepresentation = flippedBinaryRepresentation;
+    }
+
+    private void rotateToCardinal(Cardinal newCardinal) {
+        int rotations = cardinalDifference(this.orientation, newCardinal);
+        if (rotations == 0) return;
+
+        List<Boolean> rotatedBinaryRepresentation = new ArrayList<>();
+        switch (rotations) {
+            case 1 -> {
+                rotateBinaryRepresentationBy90Degrees(rotatedBinaryRepresentation);
+            }
+            case 2 -> {
+                rotatedBinaryRepresentation = binaryRepresentation;
+                Collections.reverse(rotatedBinaryRepresentation);
+            }
+            case 3 -> {
+                rotateBinaryRepresentationBy90Degrees(rotatedBinaryRepresentation);
+                Collections.reverse(rotatedBinaryRepresentation);
+            }
+            default -> throw new AssertionError();
+        }
+
+        this.binaryRepresentation = rotatedBinaryRepresentation;
+        this.orientation = newCardinal;
+    }
+
+    private void rotateBinaryRepresentationBy90Degrees(List<Boolean> rotatedBinaryRepresentation) {
+        for (int i = 0; i < binaryRepresentation.size(); i++) {
+            int ti;
+            int imh = i % height;
+            int idh = i / height;
+            if (idh % 2 == 0) {
+                if (i % 2 == 0)
+                    ti = (imh + 1) * width - (idh + 1);
+                else
+                    ti = (imh + 1) * width - (width - idh);
+            }
+            else {
+                if (i % 2 == 0)
+                    ti = (height - imh) * width - (width - idh);
+                else
+                    ti = (height - imh) * width - (idh + 1);
+            }
+            rotatedBinaryRepresentation.add(binaryRepresentation.get(ti));
+        }
+    }
+
+    private int cardinalValue(Cardinal cardinal) {
+        return switch (cardinal) {
+            case EAST  -> 0;
+            case NORTH -> 1;
+            case WEST  -> 2;
+            case SOUTH -> 3;
+            default    -> -1;
+        };
+    }
+
+    // Returns how many clockwise rotations (90°) are between 'from' and 'to'.
+    private int cardinalDifference(Cardinal from, Cardinal to) {
+        return (cardinalValue(to) - cardinalValue(from) + 4) % 4;
     }
 }

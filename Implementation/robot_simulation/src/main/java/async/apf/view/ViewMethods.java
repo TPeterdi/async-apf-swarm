@@ -193,11 +193,11 @@ public class ViewMethods {
     private Slider createSlider() {
         // Create the slider with min and max values
         int initialDelayValue = 500;
-        Slider slider = new Slider(0, 2000, initialDelayValue);
+        Slider slider = new Slider(0, 1000, initialDelayValue);
         this.simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SET_SIMULATION_DELAY, initialDelayValue));
         slider.setShowTickLabels(true);
         slider.setShowTickMarks(true);
-        slider.setMajorTickUnit(250);
+        slider.setMajorTickUnit(200);
         slider.setMinorTickCount(50);
         slider.setBlockIncrement(50);
         slider.setSnapToTicks(true);
