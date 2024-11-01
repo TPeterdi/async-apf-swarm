@@ -143,6 +143,17 @@ public class Robot {
         this.nextMove = null;
         this.currentConfiguration = null;
         this.active = false;
+        this.c0 = null;
+        this.c1 = null;
+        this.c2 = null;
+        this.c3 = null;
+        this.c4 = null;
+        this.c5 = null;
+        this.c6 = null;
+        this.c7 = null;
+        this.c8 = null;
+        this.c9 = null;
+        this.c10 = null;
     }
 
     private void computeNextMove() {
