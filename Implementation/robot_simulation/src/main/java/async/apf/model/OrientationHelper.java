@@ -239,17 +239,17 @@ public final class OrientationHelper {
                 width,
                 height);
 
-            ConfigurationOrientation lamBAOrientation = new ConfigurationOrientation(
+            ConfigurationOrientation lamCDOrientation = new ConfigurationOrientation(
                 snakeIterate(positionMatrix, x -> x, width, height,
-                false, true, true),
-                Cardinal.NORTH,
-                true,
+                false, false, true),
+                Cardinal.SOUTH,
+                false,
                 width,
                 height);
             
             return findOrientationWithLargestLexographicBinaryString(new ArrayList<>(List.of(
                 lamABOrientation,
-                lamBAOrientation
+                lamCDOrientation
             )));
         }
     }
