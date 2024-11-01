@@ -63,6 +63,27 @@ public class Coordinate {
         }
     }
 
+    public void counterRotateByCardinal(Cardinal cardinal) 
+    {
+        int tmp = this.x;
+        switch (cardinal) {
+            case WEST -> {
+                this.x = this.y;
+                this.y = -tmp;
+            }
+            case EAST -> {
+                this.x = -this.y;
+                this.y = tmp;
+            }
+            case SOUTH -> {
+                this.x = -this.y;
+                this.y = tmp;
+            }
+            default -> {
+            }
+        }
+    }
+
     public void setX(int x) {
         this.x = x;
     }

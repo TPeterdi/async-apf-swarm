@@ -1,6 +1,5 @@
 package async.apf.model;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -353,10 +352,7 @@ public class Robot {
     // If the tail and the head are relocated respectively at C and A, then
     // the new configuration remains asymmetric
     private void checkC9() {
-        List<Coordinate> copy = new ArrayList<>();
-        for (Coordinate pos : currentConfiguration.getCoordinates()) {
-            copy.add(new Coordinate(pos.getX(), pos.getY()));
-        }
+        List<Coordinate> copy = OrientationHelper.copyCoordinates(currentConfiguration.getCoordinates());
         copy.getFirst().setX(0);
         copy.getFirst().setY(0);
         copy.getLast().setX(currentConfiguration.getWidth() - 1);

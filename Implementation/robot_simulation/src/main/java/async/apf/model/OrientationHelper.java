@@ -12,9 +12,20 @@ public final class OrientationHelper {
     private OrientationHelper() {}
 
     public static RobotOrientation orientRobotAndConfiguration(List<Coordinate> configuration) {
+        List<Coordinate> copy = copyCoordinates(configuration);
+
         ConfigurationOrientation orientedConfiguration = orientConfiguration(configuration);
-        // TODO find self position
-        return new RobotOrientation(orientedConfiguration, null);
+        Coordinate selfPosition = getSelfPosition(copy, orientedConfiguration);
+
+        return new RobotOrientation(orientedConfiguration, selfPosition);
+    }
+
+    public static List<Coordinate> copyCoordinates(List<Coordinate> configuration) {
+        List<Coordinate> copy = new ArrayList<>();
+        for (Coordinate coordinate : configuration) {
+            copy.add(new Coordinate(coordinate.getX(), coordinate.getY()));
+        }
+        return copy;
     }
 
     public static ConfigurationOrientation orientConfiguration(List<Coordinate> configuration) {
@@ -301,6 +312,31 @@ public final class OrientationHelper {
         }
 
         return orientations.get(0);
+    }
+
+    private static Coordinate getSelfPosition(List<Coordinate> copy, ConfigurationOrientation orientedConfiguration) {
+        Coordinate selfPosition = null;
+        for (Coordinate coordinate : copy) {
+            if (coordinate.getX() == 0 && coordinate.getY() == 0) {
+                selfPosition = coordinate;
+                continue;
+            }
+            
+            if (orientedConfiguration.isXMirrored()) {
+                coordinate.setX(-coordinate.getX());
+            }
+            coordinate.counterRotateByCardinal(orientedConfiguration.getOrientation());
+        }
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        for (Coordinate coordinate : copy) {
+            minX = Math.min(coordinate.getX(), minX);
+            minY = Math.min(coordinate.getY(), minY);
+        }
+        // selfPosition should never be actually null here.
+        selfPosition.setX(-minX);
+        selfPosition.setY(-minY);
+        return selfPosition;
     }
 
     public static boolean isSymmetric(List<Coordinate> coordinates) {
