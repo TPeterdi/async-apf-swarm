@@ -230,7 +230,7 @@ public final class OrientationHelper {
         }
         // width == 1
         else {
-            // lamAB lamBA
+            // lamAB lamCD
             ConfigurationOrientation lamABOrientation = new ConfigurationOrientation(
                 snakeIterate(positionMatrix, x -> x, width, height,
                 true, true, true),
