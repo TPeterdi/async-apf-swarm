@@ -9,6 +9,8 @@ public class SimulationEvent implements IEvent {
     private final int robotIndex;    // Robot identifier for robot-specific events
     private final SimulationEventType eventType;
 
+    private final int phase;
+
     // For movement events
     private final int fromX;
     private final int fromY;
@@ -16,11 +18,12 @@ public class SimulationEvent implements IEvent {
     private final int toY;
 
     // Constructor for robot-specific events (with movement data)
-    public SimulationEvent(int robotIndex, SimulationEventType eventType, int fromX, int fromY, int toX, int toY) {
+    public SimulationEvent(int robotIndex, SimulationEventType eventType, int phase, int fromX, int fromY, int toX, int toY) {
         this.isGlobal = false;
 
         this.robotIndex = robotIndex;
         this.eventType = eventType;
+        this.phase = phase;
 
         this.fromX = fromX;
         this.fromY = fromY;
@@ -32,6 +35,7 @@ public class SimulationEvent implements IEvent {
         
         this.robotIndex = robotIndex;
         this.eventType = eventType;
+        this.phase = -1;
 
         this.fromX = 0;
         this.fromY = 0;
@@ -45,6 +49,7 @@ public class SimulationEvent implements IEvent {
 
         this.robotIndex = -1;
         this.eventType = eventType;
+        this.phase = -1;
 
         this.fromX = 0;
         this.fromY = 0;
@@ -79,6 +84,10 @@ public class SimulationEvent implements IEvent {
 
     public int getToY() {
         return toY;
+    }
+
+    public int getPhase() {
+        return phase;
     }
 
     @Override

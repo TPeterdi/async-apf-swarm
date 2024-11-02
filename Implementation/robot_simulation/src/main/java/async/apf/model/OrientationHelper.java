@@ -381,7 +381,7 @@ public final class OrientationHelper {
 
     public static boolean hasDiagonalSymmetry1(Set<Coordinate> coords, int midX, int midY) {
         for (Coordinate coord : coords) {
-            Coordinate mirrored = new Coordinate(midX - (coord.getY() - midY), midY - (midX - coord.getX()));
+            Coordinate mirrored = new Coordinate(midX - (midY - coord.getY()), midY - (midX - coord.getX()));
             if (!coords.contains(mirrored)) return false;
         }
         return true;
@@ -389,7 +389,7 @@ public final class OrientationHelper {
 
     public static boolean hasDiagonalSymmetry2(Set<Coordinate> coords, int midX, int midY) {
         for (Coordinate coord : coords) {
-            Coordinate mirrored = new Coordinate(midX + (coord.getY() - midY), midY + (midX - coord.getX()));
+            Coordinate mirrored = new Coordinate(midX + (midY - coord.getY()), midY + (midX - coord.getX()));
             if (!coords.contains(mirrored)) return false;
         }
         return true;

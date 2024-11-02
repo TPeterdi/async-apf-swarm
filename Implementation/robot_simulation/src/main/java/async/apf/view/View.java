@@ -89,9 +89,10 @@ public class View extends Application implements IView {
                 // System.out.println("View: Robot " + event.getRobotId() + " is computing data.");
                 break;
             case ROBOT_MOVING:
-                System.out.println("View: Robot " + event.getRobotId() + " is moving from (" +
-                        event.getFromX() + "," + event.getFromY() + ") to (" +
-                        event.getToX() + "," + event.getToY() + ").");
+                System.out.println("View: Robot " + event.getRobotId() +
+                        "\tcalculated PHASE " + event.getPhase() +
+                        " and moved from (" + event.getFromX() + "," + event.getFromY() + ")"+
+                                    " to (" + event.getToX()   + "," + event.getToY()   + ")");
                 for (Coordinate coord : viewMethods.initialStates){
                     if (coord.getX() == event.getFromX() && coord.getY() == event.getFromY()) {
                         coord.setX(event.getToX());

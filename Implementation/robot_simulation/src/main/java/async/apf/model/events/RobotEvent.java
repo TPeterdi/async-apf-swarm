@@ -5,15 +5,21 @@ import async.apf.model.enums.RobotEventType;
 
 public class RobotEvent implements IEvent {
     private final RobotEventType eventType;
+    private final int phase;
     private final int id;
 
-    public RobotEvent(RobotEventType eventType, int id) {
+    public RobotEvent(RobotEventType eventType, int phase, int id) {
         this.eventType = eventType;
+        this.phase = phase;
         this.id = id;
     }
 
     public RobotEventType getEventType() {
         return this.eventType;
+    }
+
+    public int getPhase() {
+        return phase;
     }
     
     public int getId() {

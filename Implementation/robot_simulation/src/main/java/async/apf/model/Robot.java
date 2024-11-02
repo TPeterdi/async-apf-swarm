@@ -24,6 +24,7 @@ public class Robot {
     private RobotOrientation currentConfiguration;
     private ConfigurationOrientation targetPattern;
 
+    private int currentPhase;
     private Cardinal nextMove = null;
     private int currentDelay;
 
@@ -33,7 +34,7 @@ public class Robot {
 
     public synchronized void activate(int currentId, int currentDelay) {
         if (this.active) {
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentId));
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentPhase, this.currentId));
             return;
         }
         this.active = true;
@@ -53,12 +54,12 @@ public class Robot {
         try {
             // LOOK
             this.lookFuture = new CompletableFuture();
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentId));
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentPhase, this.currentId));
             this.lookFuture.get();
             awaitArtificialDelay();
 
             // COMPUTE
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.COMPUTE, this.currentId));
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.COMPUTE, this.currentPhase, this.currentId));
             computeNextMove();
             awaitArtificialDelay();
 
@@ -67,7 +68,7 @@ public class Robot {
             awaitArtificialDelay();
 
             resetState();
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentId));
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.IDLE, this.currentPhase, this.currentId));
         }
         catch (Exception ex) {
             System.err.println(ex.getMessage());
@@ -82,16 +83,16 @@ public class Robot {
 
     private void signalMovement() throws AssertionError {
         if (this.nextMove == null) {
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.STAY_PUT, this.currentId));
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.STAY_PUT, this.currentPhase, this.currentId));
         }
         else {
             Cardinal realMove = transformMoveBackToGlobalOrientation();
 
             switch (realMove) {
-                case NORTH -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_NORTH, this.currentId));
-                case EAST  -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_EAST,  this.currentId));
-                case SOUTH -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_SOUTH, this.currentId));
-                case WEST  -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_WEST,  this.currentId));
+                case NORTH -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_NORTH, this.currentPhase, this.currentId));
+                case EAST  -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_EAST,  this.currentPhase, this.currentId));
+                case SOUTH -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_SOUTH, this.currentPhase, this.currentId));
+                case WEST  -> this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.MOVE_WEST,  this.currentPhase, this.currentId));
                 default -> throw new AssertionError();
             }
         }
@@ -178,7 +179,7 @@ public class Robot {
             doPhaseVII();
         }
         else {
-            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.PATTERN_COMPLETE, this.currentId));
+            this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.PATTERN_COMPLETE, this.currentPhase, this.currentId));
         }
     }
 
@@ -413,6 +414,7 @@ public class Robot {
     }
     private void doPhaseI() {
         // TAIL moves up
+        this.currentPhase = 1;
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             this.nextMove = Cardinal.NORTH;
         }
@@ -439,6 +441,7 @@ public class Robot {
     }
     private void doPhaseII() {
         // HEAD moves left
+        this.currentPhase = 2;
         if (currentConfiguration.getHeadPosition().equals(currentConfiguration.getSelfPosition())) {
             this.nextMove = Cardinal.WEST;
         }
@@ -456,12 +459,13 @@ public class Robot {
     }
     private void doPhaseIII() {
         // The aim of this phase is to make C7 true
+        this.currentPhase = 3;
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             if (getC10()) {
                 // TAIL moves left or upwards in accordance with
                 // m > n + 1 or m = n + 1
                 if (currentConfiguration.getHeight() > currentConfiguration.getWidth() + 1) {
-                    this.nextMove = Cardinal.EAST;
+                    this.nextMove = Cardinal.WEST;
                 }
                 else {
                     this.nextMove = Cardinal.NORTH;
@@ -498,6 +502,7 @@ public class Robot {
         !getC2();
     }
     private void doPhaseIV() {
+        this.currentPhase = 4;
         Coordinate selfPosition = currentConfiguration.getSelfPosition();
 
         // only continue if this is an inner robot
@@ -530,6 +535,7 @@ public class Robot {
     }
     private void doPhaseV() {
         // TAIL moves horizontally to make C3 true
+        this.currentPhase = 5;
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             if (getC10()) {
                 int maxPrimeX = Integer.MIN_VALUE;
@@ -581,6 +587,7 @@ public class Robot {
     }
     private void doPhaseVI() {
         // HEAD moves horizontally to reach h_target
+        this.currentPhase = 6;
         Coordinate headPosition = currentConfiguration.getHeadPosition();
         if (headPosition.equals(currentConfiguration.getSelfPosition()) &&
                 !headPosition.equals(targetPattern.getHeadPosition())) {
@@ -597,6 +604,7 @@ public class Robot {
     }
     private void doPhaseVII() {
         // TAIL moves vertically to reach t_target
+        this.currentPhase = 7;
         Coordinate tailPosition = currentConfiguration.getTailPosition();
         if (tailPosition.equals(currentConfiguration.getSelfPosition()) &&
             !tailPosition.equals(targetPattern.getTailPosition())) {

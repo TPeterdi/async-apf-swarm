@@ -101,12 +101,12 @@ public class Simulation implements IEventListener {
         return hasBegun && isPaused;
     }
 
-    private void moveRobotBy(int robotIndex, int dx, int dy) {
+    private void moveRobotBy(int robotIndex, int dx, int dy, int phase) {
         // No validation in exchange for speed (we should only allow cardinal movements by 1)
         Coordinate currentCoordinate = currentConfiguration.get(robotIndex);
         int currentX = currentCoordinate.getX();
         int currentY = currentCoordinate.getY();
-        globalEventEmitter.emitEvent(new SimulationEvent(robotIndex, SimulationEventType.ROBOT_MOVING, currentX, currentY, currentX + dx, currentY + dy));
+        globalEventEmitter.emitEvent(new SimulationEvent(robotIndex, SimulationEventType.ROBOT_MOVING, phase, currentX, currentY, currentX + dx, currentY + dy));
         currentCoordinate.moveBy(dx, dy);
     }
 
@@ -138,10 +138,10 @@ public class Simulation implements IEventListener {
                     pickedRobot.supplyConfigurations(translateConfigurationToRobotsCoordinate(robotLocation), this.targetPattern);
                 }
                 case COMPUTE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_COMPUTING));
-                case MOVE_NORTH -> moveRobotBy(index, 0, 1);
-                case MOVE_EAST  -> moveRobotBy(index, 1, 0);
-                case MOVE_SOUTH -> moveRobotBy(index, 0, -1);
-                case MOVE_WEST  -> moveRobotBy(index, -1, 0);
+                case MOVE_NORTH -> moveRobotBy(index, 0, 1, robotEvent.getPhase());
+                case MOVE_EAST  -> moveRobotBy(index, 1, 0, robotEvent.getPhase());
+                case MOVE_SOUTH -> moveRobotBy(index, 0, -1, robotEvent.getPhase());
+                case MOVE_WEST  -> moveRobotBy(index, -1, 0, robotEvent.getPhase());
                 case IDLE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_IDLE));
                 case PATTERN_COMPLETE -> this.completed = true;
                 default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
