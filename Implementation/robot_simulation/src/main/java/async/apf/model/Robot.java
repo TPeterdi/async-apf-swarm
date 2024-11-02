@@ -653,7 +653,9 @@ public class Robot {
             }
             else {
                 // same horizontal line
-                this.nextMove = Cardinal.WEST;
+                this.nextMove = ti.getY() % 2 == 0
+                    ? Cardinal.WEST
+                    : Cardinal.EAST;
             }
         }
         else {
@@ -684,7 +686,9 @@ public class Robot {
             }
             else {
                 // same horizontal line
-                this.nextMove = Cardinal.EAST;
+                this.nextMove = ti.getY() % 2 == 0
+                    ? Cardinal.EAST
+                    : Cardinal.WEST;
             }
         }
         else {
