@@ -38,6 +38,7 @@ public class ViewMethods {
     public Boolean isSimulationStarted = false;
     public Boolean isSimulationRunning = false;
     public Boolean isSimulationFinished = false;
+    public Stage newWindow;
     private final List<String[]> initialStatesTemp = new ArrayList<>();
     private final List<String[]> targetStatesTemp = new ArrayList<>();
     public List<Coordinate> initialStates = new ArrayList<>();
@@ -157,7 +158,7 @@ public class ViewMethods {
     }
 
     public void openSimulationWindow() {
-        Stage newWindow = new Stage();
+        newWindow = new Stage();
         newWindow.setTitle("Simulation");
 
         simulationCanvas = new Canvas(800, 400);
@@ -247,13 +248,13 @@ public class ViewMethods {
     }
 
     private VBox getvBox(Stage window) {
-        Button controllButton = getMainButton();
+        Button controllButton = getMainButton(window);
 
-        Button closeButton = getCloseButton();
+        Button closeButton = getCloseButton(window);
         return new VBox(10, controllButton, closeButton);
     }
 
-    private Button getMainButton() {
+    private Button getMainButton(Stage window) {
         Button controllButton = new Button();
         if(isSimulationFinished){
             controllButton.setText("Restart");
@@ -267,6 +268,7 @@ public class ViewMethods {
 
         controllButton.setOnAction(e -> {
             if(isSimulationFinished) {
+                initialStates.clear();
                 copyCoordinates();
                 isSimulationFinished = false;
                 isSimulationRunning = true;
@@ -276,7 +278,7 @@ public class ViewMethods {
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
-                refreshControlsVBox();
+                refreshControlsVBox(window);
 
             }
             else if(isSimulationRunning){
@@ -288,7 +290,7 @@ public class ViewMethods {
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
-                refreshControlsVBox();
+                refreshControlsVBox(window);
 
             }
             else if(isSimulationStarted){
@@ -300,7 +302,7 @@ public class ViewMethods {
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
-                refreshControlsVBox();
+                refreshControlsVBox(window);
 
             }
             else {
@@ -312,25 +314,26 @@ public class ViewMethods {
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
-                refreshControlsVBox();
+                refreshControlsVBox(window);
             }
         });
         return controllButton;
     }
 
-    private Button getCloseButton() {
+    private Button getCloseButton(Stage window) {
         Button closeButton = new Button("Close");
         closeButton.setOnAction(e -> {
             isSimulationRunning = false;
             isSimulationFinished = false;
+            isSimulationStarted = false;
             try {
                 simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SIMULATION_END));
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
             initialStates.clear();
-            initialStatesOriginal.clear();
-            targetStates.clear();
+            copyCoordinates();
+            window.close();
             // Close logic here if needed
         });
         return closeButton;
@@ -442,11 +445,11 @@ public class ViewMethods {
         drawGrid(gc);
     }
 
-    public void refreshControlsVBox() {
+    public void refreshControlsVBox(Stage window) {
         Platform.runLater(() -> {
             controlsBox.getChildren().clear();
-            controlsBox.getChildren().add(getMainButton());
-            controlsBox.getChildren().add(getCloseButton());
+            controlsBox.getChildren().add(getMainButton(window));
+            controlsBox.getChildren().add(getCloseButton(window));
         });
     }
 
