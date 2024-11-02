@@ -516,8 +516,10 @@ public class Robot {
         Coordinate ri = selfPosition;
         Coordinate ti = targetPattern.getCoordinates().get(index);
 
+        if (ri.equals(ti)) return;
+
         // REARRANGE (Algorithm 2)
-        if (isTiLeftOfRi(ti, ri))
+        if (isLeftOf(ti, ri))
             calculateMoveTowardsTargetToTheLeft(ri, ti);
         else
             calculateMoveTowardsTargetToTheRight(ri, ti);
@@ -621,7 +623,7 @@ public class Robot {
     
     // #region HELPERS
     private void calculateMoveTowardsTargetToTheLeft(Coordinate ri, Coordinate ti) {
-        if (!noOtherRobotInSubPathFromRiToTi(ri, ti))
+        if (!noOtherRobotInSubPath(ti, ri))
             return;
 
         if (isRiAndTiOnSameLine(ri, ti)) {
@@ -637,7 +639,7 @@ public class Robot {
         }
         else {
             Coordinate adj = new Coordinate(ri.getX(), ri.getY() - 1);
-            if (isTiLeftOfRi(adj, ri)) {
+            if (isLeftOf(adj, ti)) {
                 // ri moves to its left adjacent node on P
                 findMoveTowardsLeftAdjacentNode(ri);
             }
@@ -652,7 +654,7 @@ public class Robot {
         if (!noInnerRobotWithTjAtLeftOfRj())
             return;
 
-        if (!noOtherRobotInSubPathFromRiToTi(ri, ti))
+        if (!noOtherRobotInSubPath(ri, ti))
             return;
 
         if (isRiAndTiOnSameLine(ri, ti)) {
@@ -668,7 +670,7 @@ public class Robot {
         }
         else {
             Coordinate adj = new Coordinate(ri.getX(), ri.getY() + 1);
-            if (isTiLeftOfRi(adj, ri)) {
+            if (isLeftOf(adj, ti)) {
                 // ri moves upwards
                 this.nextMove = Cardinal.NORTH;
             }
@@ -689,32 +691,30 @@ public class Robot {
         return -1;
     }
 
-    private boolean isTiLeftOfRi(Coordinate ti, Coordinate ri) {
-        int rx = ri.getX();
-        int ry = ri.getY();
-        int tx = ti.getX();
-        int ty = ti.getY();
+    private boolean isLeftOf(Coordinate what, Coordinate comparedTo) {
+        int cx = comparedTo.getX();
+        int cy = comparedTo.getY();
+        int wx = what.getX();
+        int wy = what.getY();
 
-        if (ry > ty)
+        if (wy < cy)
             return true;
             
-        if (ry < ty)
+        if (wy > cy)
             return false;
 
         // same y-coordinate
         
-        return ry % 2 == 0
-            ? tx < rx
-            : rx < tx;
+        return cy % 2 == 0
+            ? wx < cx
+            : wx > cx;
     }
 
-    private boolean noOtherRobotInSubPathFromRiToTi(Coordinate ri, Coordinate ti) {
-        int rIndex = OrientationHelper.coordinateToIndex(ri, currentConfiguration.getWidth()) + 1;
-        int tIndex = OrientationHelper.coordinateToIndex(ti, currentConfiguration.getWidth()) - 1;
-        int startIndex = Math.min(rIndex, tIndex);
-        int endIndex   = Math.max(rIndex, tIndex);
+    private boolean noOtherRobotInSubPath(Coordinate left, Coordinate right) {
+        int startIndex = OrientationHelper.coordinateToIndex(left, currentConfiguration.getWidth()) + 1;
+        int endIndex = OrientationHelper.coordinateToIndex(right, currentConfiguration.getWidth()) - 1;
         for (int i = startIndex; i <= endIndex; i++) {
-            if (currentConfiguration.getBinaryRepresentation().get(endIndex)) {
+            if (Boolean.TRUE.equals(currentConfiguration.getBinaryRepresentation().get(i))) {
                 return false;
             }
         }
@@ -726,19 +726,11 @@ public class Robot {
     }
 
     private void findMoveTowardsLeftAdjacentNode(Coordinate ri) {
-        if (ri.getX() == 0) {
-            this.nextMove = Cardinal.SOUTH;
-        }
-        else if (ri.getX() - 1 == currentConfiguration.getWidth()) {
-            this.nextMove = Cardinal.SOUTH;
+        if (ri.getY() % 2 == 0) {
+            this.nextMove = Cardinal.WEST;
         }
         else {
-            if (ri.getY() % 2 == 0) {
-                this.nextMove = Cardinal.WEST;
-            }
-            else {
-                this.nextMove = Cardinal.EAST;
-            }
+            this.nextMove = Cardinal.EAST;
         }
     }
 
@@ -747,7 +739,7 @@ public class Robot {
         for (int j = 1; j < currentConfiguration.getCoordinates().size() - 1; j++) {
             Coordinate rj = currentConfiguration.getCoordinates().get(j);
             Coordinate tj = targetPattern.getCoordinates().get(j);
-            if (isTiLeftOfRi(tj, rj)) {
+            if (isLeftOf(tj, rj)) {
                 return false;
             }
         }
@@ -755,20 +747,11 @@ public class Robot {
     }
 
     private void findMoveTowardsRightAdjacentNode(Coordinate ri) {
-        // ri moves to its right adjacent node on P
-        if (ri.getX() == 0) {
-            this.nextMove = Cardinal.NORTH;
-        }
-        else if (ri.getX() - 1 == currentConfiguration.getWidth()) {
-            this.nextMove = Cardinal.NORTH;
+        if (ri.getY() % 2 == 0) {
+            this.nextMove = Cardinal.EAST;
         }
         else {
-            if (ri.getY() % 2 == 0) {
-                this.nextMove = Cardinal.EAST;
-            }
-            else {
-                this.nextMove = Cardinal.WEST;
-            }
+            this.nextMove = Cardinal.WEST;
         }
     }
     // #endregion HELPERS

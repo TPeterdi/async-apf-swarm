@@ -39,6 +39,16 @@ public class ConfigurationOrientation {
         return binaryRepresentation;
     }
 
+    public String getBinaryString() {
+        StringBuilder binaryString = new StringBuilder();
+
+        for (Boolean bool : binaryRepresentation) {
+            binaryString.append(Boolean.TRUE.equals(bool) ? "1" : "0");
+        }
+
+        return binaryString.toString();
+    }
+
     public Cardinal getOrientation() {
         return orientation;
     }

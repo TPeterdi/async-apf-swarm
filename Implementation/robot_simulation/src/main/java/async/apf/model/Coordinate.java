@@ -76,8 +76,8 @@ public class Coordinate {
                 this.y = tmp;
             }
             case SOUTH -> {
-                this.x = -this.y;
-                this.y = tmp;
+                this.x = -this.x;
+                this.y = -this.y;
             }
             default -> {
             }
