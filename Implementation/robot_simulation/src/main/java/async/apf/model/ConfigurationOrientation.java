@@ -111,8 +111,10 @@ public class ConfigurationOrientation {
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
 
-        for (int idx = 0; idx < coordinates.size() - 1; idx++) {
-            if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
+        Coordinate diff = coordinates.get(0).difference(other.coordinates.get(0));
+        for (int idx = 1; idx < coordinates.size() - 1; idx++) {
+            Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(idx));
+            if (!diff.equals(currentDifference)) {
                 return false;
             }
         }
@@ -128,8 +130,10 @@ public class ConfigurationOrientation {
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
 
-        for (int idx = 1; idx < coordinates.size() - 1; idx++) {
-            if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
+        Coordinate diff = coordinates.get(1).difference(other.coordinates.get(1));
+        for (int idx = 2; idx < coordinates.size() - 1; idx++) {
+            Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(idx));
+            if (!diff.equals(currentDifference)) {
                 return false;
             }
         }
@@ -154,13 +158,10 @@ public class ConfigurationOrientation {
         this.xMirrored = !this.xMirrored;
 
         List<Boolean> flippedBinaryRepresentation = new ArrayList<>();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int tx = y % 2 == 0
-                    ? width - x - 1
-                    : x;
-                flippedBinaryRepresentation.add(binaryRepresentation.get(y * width + tx));
-            }
+        for (int i = 0; i < binaryRepresentation.size(); i++) {
+            int h = i / width;
+            int w = width - 1 - (i % width);
+            flippedBinaryRepresentation.add(binaryRepresentation.get(h * width + w));
         }
         binaryRepresentation = flippedBinaryRepresentation;
     }

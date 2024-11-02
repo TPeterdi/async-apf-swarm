@@ -276,7 +276,7 @@ public class Robot {
     private Boolean c5;
     // y-coordinate of the tail is odd
     private void checkC5() {
-        c5 = currentConfiguration.getTailPosition().getY() % 2 == 1;
+        c5 = currentConfiguration.getTailPosition().getY() % 2 == 0;
     }
     /**
      * y-coordinate of the tail is odd
@@ -412,8 +412,12 @@ public class Robot {
             getC3()
         );
     }
+    /**
+     * TAIL robot moves upwards to reach a horizontal line such that neither the
+     * horizontal line nor other horizontal lines above it contain any robot or
+     * target position
+     */
     private void doPhaseI() {
-        // TAIL moves up
         this.currentPhase = 1;
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             this.nextMove = Cardinal.NORTH;
@@ -439,8 +443,10 @@ public class Robot {
             !getC2()
         );
     }
+    /**
+     * HEAD moves left to reach 0,0
+     */
     private void doPhaseII() {
-        // HEAD moves left
         this.currentPhase = 2;
         if (currentConfiguration.getHeadPosition().equals(currentConfiguration.getSelfPosition())) {
             this.nextMove = Cardinal.WEST;
@@ -457,8 +463,12 @@ public class Robot {
         !getC2() &&
         !getC7();
     }
+    /**
+     * TAIL robot moves rightwards to reach a vertical line such that neither the 
+     * vertical line nor any vertical line to the right of it contains any robot
+     * or target positions
+     */
     private void doPhaseIII() {
-        // The aim of this phase is to make C7 true
         this.currentPhase = 3;
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             if (getC10()) {
@@ -501,6 +511,9 @@ public class Robot {
         getC8() &&
         !getC2();
     }
+    /**
+     * Inner robots carefully move to take their respective target position 
+     */
     private void doPhaseIV() {
         this.currentPhase = 4;
         Coordinate selfPosition = currentConfiguration.getSelfPosition();
@@ -535,8 +548,10 @@ public class Robot {
         getC8() &&
         !getC3();
     }
+    /**
+     * TAIL moves horizontally to make C3 true
+     */
     private void doPhaseV() {
-        // TAIL moves horizontally to make C3 true
         this.currentPhase = 5;
         if (currentConfiguration.getTailPosition().equals(currentConfiguration.getSelfPosition())) {
             if (getC10()) {
@@ -587,12 +602,14 @@ public class Robot {
         getC5() &&
         getC6();
     }
+    /**
+     * HEAD moves horizontally to reach h_target
+     */
     private void doPhaseVI() {
-        // HEAD moves horizontally to reach h_target
         this.currentPhase = 6;
         Coordinate headPosition = currentConfiguration.getHeadPosition();
         if (headPosition.equals(currentConfiguration.getSelfPosition()) &&
-                !headPosition.equals(targetPattern.getHeadPosition())) {
+            !headPosition.equals(targetPattern.getHeadPosition())) {
             this.nextMove = Cardinal.EAST;
         }
     }
@@ -604,8 +621,10 @@ public class Robot {
         getC1() &&
         getC3();
     }
+    /**
+     * TAIL moves vertically to reach t_target
+     */
     private void doPhaseVII() {
-        // TAIL moves vertically to reach t_target
         this.currentPhase = 7;
         Coordinate tailPosition = currentConfiguration.getTailPosition();
         if (tailPosition.equals(currentConfiguration.getSelfPosition()) &&

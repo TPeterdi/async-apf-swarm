@@ -92,6 +92,10 @@ public class Coordinate {
         this.y = y;
     }
 
+    public Coordinate difference(Coordinate to) {
+        return new Coordinate(to.x - x, to.y - y);
+    }
+
     @Override
     public String toString() {
         return "(" + x + ", " + y + ")";
