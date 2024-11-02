@@ -328,10 +328,10 @@ public final class OrientationHelper {
                 continue;
             }
             
+            coordinate.counterRotateByCardinal(orientedConfiguration.getOrientation());
             if (orientedConfiguration.isXMirrored()) {
                 coordinate.setX(-coordinate.getX());
             }
-            coordinate.counterRotateByCardinal(orientedConfiguration.getOrientation());
         }
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
