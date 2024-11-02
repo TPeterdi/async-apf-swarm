@@ -56,15 +56,21 @@ public final class OrientationHelper {
         }
 
         // Rotate the configuration such that it's a "tall" rectangle (height >= width)
+        boolean rotated = false;
         if (width > height) {
             makeConfigurationTall(height, configuration);
             int tmp = height;
             height = width;
             width = tmp;
+            rotated = true;
         }
 
         Boolean[][] positionMatrix = initializePositionMatrix(width, height, configuration);
-        return findBestOrientation(width, height, positionMatrix);
+        ConfigurationOrientation orientation = findBestOrientation(width, height, positionMatrix);
+        if (rotated) {
+            orientation.adjustOrientationByCardinal(Cardinal.EAST);
+        }
+        return orientation;
     }
 
     private static void makeConfigurationTall(int height, List<Coordinate> configuration) {

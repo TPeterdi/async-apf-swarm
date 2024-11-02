@@ -178,6 +178,9 @@ public class ConfigurationOrientation {
         this.binaryRepresentation = rotatedBinaryRepresentation;
         this.orientation = newCardinal;
     }
+    public void adjustOrientationByCardinal(Cardinal newCardinal) {
+        this.orientation = valueToCardinal(cardinalValue(this.orientation) + cardinalValue(newCardinal));
+    }
 
     private void rotateBinaryRepresentationBy90Degrees(List<Boolean> rotatedBinaryRepresentation) {
         for (int i = 0; i < binaryRepresentation.size(); i++) {
@@ -205,16 +208,25 @@ public class ConfigurationOrientation {
 
     private int cardinalValue(Cardinal cardinal) {
         return switch (cardinal) {
-            case EAST  -> 0;
-            case NORTH -> 1;
-            case WEST  -> 2;
-            case SOUTH -> 3;
+            case NORTH -> 0;
+            case WEST  -> 1;
+            case SOUTH -> 2;
+            case EAST  -> 3;
             default    -> -1;
+        };
+    }
+    private Cardinal valueToCardinal(int value) {
+        return switch ((value + 4) % 4) {
+            case 0  -> Cardinal.NORTH;
+            case 1  -> Cardinal.WEST;
+            case 2  -> Cardinal.SOUTH;
+            case 3  -> Cardinal.EAST;
+            default -> null;
         };
     }
 
     // Returns how many clockwise rotations (90°) are between 'from' and 'to'.
-    private int cardinalDifference(Cardinal from, Cardinal to) {
+    public int cardinalDifference(Cardinal from, Cardinal to) {
         return (cardinalValue(to) - cardinalValue(from) + 4) % 4;
     }
 }
