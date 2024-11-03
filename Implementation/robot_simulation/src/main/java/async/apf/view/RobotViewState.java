@@ -10,8 +10,9 @@ import javafx.scene.text.Font;
 public class RobotViewState implements IPositioned {
     private int stepCount = 0;
     private RobotState state = RobotState.IDLE;
-    private Coordinate position;
+    private final Coordinate position;
     private boolean followed;
+    private int lastPhase;
 
     public RobotViewState(Coordinate position) {
         super();
@@ -36,6 +37,14 @@ public class RobotViewState implements IPositioned {
     @Override
     public Coordinate getCoordinate() {
         return this.position;
+    }
+
+    public int getLastPhase() {
+        return this.lastPhase;
+    }
+
+    public void setLastPhase(int lastPhase) {
+        this.lastPhase = lastPhase;
     }
 
     private static final int REGULAR_SIZE = 12;
@@ -71,12 +80,26 @@ public class RobotViewState implements IPositioned {
             );
         }
     }
+    public String numberToRomanNumeral(int number) {
+        return switch (number) {
+            case 0 -> "-";
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            case 6 -> "VI";
+            case 7 -> "VII";
+            default -> throw new AssertionError();
+        };
+    }
 
     @Override
     public void hoverEffect(GraphicsContext gc, double  width, double height, double screenX, double screenY, double zoom) {
         // Prepare the text to display
         String stepCountInfo = String.format("Step Count: %d", stepCount);
         String stateInfo = String.format("State: %s", state);
+        String phaseInfo = "Last phase: " + numberToRomanNumeral(lastPhase);
 
         // Set text properties
         gc.setFont(Font.font(20));
@@ -91,7 +114,7 @@ public class RobotViewState implements IPositioned {
 
         // Calculate background rectangle coordinates
         double backgroundWidth = 200; // Fixed width for background
-        double backgroundHeight = 50;
+        double backgroundHeight = 80;
 
         // Background rectangle position
         double backgroundX = textX - backgroundWidth;
@@ -105,8 +128,9 @@ public class RobotViewState implements IPositioned {
         gc.setFill(Color.BLACK);
 
         // Draw each line of text
-        gc.fillText(stepCountInfo, textX - backgroundWidth + 5, textY - textHeight * 2 + padding);
-        gc.fillText(stateInfo,     textX - backgroundWidth + 5, textY - textHeight * 1 + padding);
+        gc.fillText(stepCountInfo, textX - backgroundWidth + 5, textY - textHeight * 3 + padding);
+        gc.fillText(stateInfo,     textX - backgroundWidth + 5, textY - textHeight * 2 + padding);
+        gc.fillText(phaseInfo,     textX - backgroundWidth + 5, textY - textHeight * 1 + padding);
     }
 
     @Override
