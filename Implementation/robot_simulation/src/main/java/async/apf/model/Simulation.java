@@ -25,8 +25,8 @@ public class Simulation implements IEventListener {
     private final List<Robot> robots;
 
     private boolean hasBegun = false;
-    private boolean isPaused = false;
-    private boolean completed = false;
+    private volatile boolean isPaused = false;
+    private volatile boolean completed = false;
 
     private final Thread simulationThread;
 
