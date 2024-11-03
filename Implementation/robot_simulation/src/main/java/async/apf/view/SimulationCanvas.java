@@ -26,6 +26,10 @@ public final class SimulationCanvas extends Canvas {
     private List<Coordinate> coordinates;
 
     private Color color;
+    
+    // Fields to track the last hovered grid tile
+    private int lastHoveredTileX = Integer.MIN_VALUE;
+    private int lastHoveredTileY = Integer.MIN_VALUE;
 
     public SimulationCanvas(double width, double height, List<Coordinate> coordinates, Color color) {
         super(width, height);
@@ -37,6 +41,7 @@ public final class SimulationCanvas extends Canvas {
         this.setOnMousePressed(this::onMousePressed);
         this.setOnMouseDragged(this::onMouseDragged);
         this.setOnScroll(this::onScroll);
+        this.setOnMouseMoved(this::onMouseMoved);
 
         this.fitView();
     }
@@ -109,11 +114,11 @@ public final class SimulationCanvas extends Canvas {
 
         // Draw origin marker
         // -- only use for debugging --
-        // double originScreenX = width / 2 - cameraX * zoom;
-        // double originScreenY = height / 2 + cameraY * zoom;
-        // gc.setStroke(Color.RED);
-        // gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
-        // gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
+        double originScreenX = width / 2 - cameraX * zoom;
+        double originScreenY = height / 2 + cameraY * zoom;
+        gc.setStroke(Color.RED);
+        gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
+        gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
 
         // Draw points on the grid
         drawPoints(this.color, width, height);
@@ -185,5 +190,25 @@ public final class SimulationCanvas extends Canvas {
     
         // Redraw the grid with the new camera and zoom settings
         drawGrid();
+    }
+
+    private void onMouseMoved(MouseEvent e) {
+        // Convert screen coordinates to world coordinates
+        double mouseX = e.getX();
+        double mouseY = e.getY();
+    
+        double worldX = (mouseX - getWidth() / 2) / zoom + cameraX;
+        double worldY = -(mouseY - getHeight() / 2) / zoom + cameraY;
+    
+        // Calculate grid tile coordinates
+        int tileX = (int) Math.floor(worldX / GRID_SPACING + 0.5);
+        int tileY = (int) Math.floor(worldY / GRID_SPACING + 0.5);
+    
+        // Check if we're hovering over a new tile
+        if (tileX != lastHoveredTileX || tileY != lastHoveredTileY) {
+            System.out.printf("Entered tile: (%d, %d)%n", tileX, tileY);
+            lastHoveredTileX = tileX;
+            lastHoveredTileY = tileY;
+        }
     }
 }
