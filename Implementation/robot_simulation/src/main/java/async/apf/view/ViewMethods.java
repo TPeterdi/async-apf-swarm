@@ -303,7 +303,7 @@ public class ViewMethods {
             initialStatesOriginal.clear();
             copyCoordinates();
             window.close();
-            // Close logic here if needed
+            simulationStartButton.setDisable(true);
         });
         return closeButton;
     }
