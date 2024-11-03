@@ -132,7 +132,7 @@ public class View extends Application implements IView {
                     "\tcalculated PHASE " + event.getPhase() +
                     " and moved from (" + event.getFromX() + "," + event.getFromY() + ")"+
                             " to (" + event.getToX()   + "," + event.getToY()   + ")");
-                
+                robot.setLastPhase(event.getPhase());
                 robot.incrementStepCount();
                 robot.setState(RobotState.MOVE);
                 robot.getCoordinate().setX(event.getToX());
