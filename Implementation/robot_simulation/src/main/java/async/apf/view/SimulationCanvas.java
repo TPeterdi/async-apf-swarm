@@ -10,7 +10,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.paint.Color;
 
-public class SimulationCanvas extends Canvas {
+public final class SimulationCanvas extends Canvas {
     private static final double MIN_ZOOM = 0.5;
     private static final double MAX_ZOOM = 5.0;
     private static final double GRID_SPACING = 20.0;
@@ -33,13 +33,12 @@ public class SimulationCanvas extends Canvas {
         this.color = color;
         this.gc = this.getGraphicsContext2D();
 
-        // Initial grid draw
-        drawGrid();
-        
         // Mouse events
         this.setOnMousePressed(this::onMousePressed);
         this.setOnMouseDragged(this::onMouseDragged);
         this.setOnScroll(this::onScroll);
+
+        this.fitView();
     }
 
     public SimulationCanvas(double width, double height, List<Coordinate> coordinates) {
@@ -109,11 +108,12 @@ public class SimulationCanvas extends Canvas {
         }
 
         // Draw origin marker
-        double originScreenX = width / 2 - cameraX * zoom;
-        double originScreenY = height / 2 + cameraY * zoom;
-        gc.setStroke(Color.RED);
-        gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
-        gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
+        // -- only use for debugging --
+        // double originScreenX = width / 2 - cameraX * zoom;
+        // double originScreenY = height / 2 + cameraY * zoom;
+        // gc.setStroke(Color.RED);
+        // gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
+        // gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
 
         // Draw points on the grid
         drawPoints(this.color, width, height);
@@ -143,6 +143,47 @@ public class SimulationCanvas extends Canvas {
     }
 
     public void refresh() {
+        drawGrid();
+    }
+
+    public void fitView() {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+
+        // Iterate over the points to find the min and max x, y values
+        for (Coordinate point : this.coordinates) {
+            int x = point.getX();
+            int y = point.getY();
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+
+        // Calculate the center of the bounding box
+        double centerX = (minX + maxX) / 2.0;
+        double centerY = (minY + maxY) / 2.0;
+    
+        // Set camera position to center the bounding box
+        cameraX = centerX * GRID_SPACING;
+        cameraY = centerY * GRID_SPACING;
+    
+        // Calculate the required zoom level to fit the bounding box
+        double width = getWidth();
+        double height = getHeight();
+    
+        double boundingBoxWidth = (maxX - minX + 3) * GRID_SPACING;
+        double boundingBoxHeight = (maxY - minY + 6) * GRID_SPACING;
+    
+        double zoomX = width / boundingBoxWidth;
+        double zoomY = height / boundingBoxHeight;
+    
+        // Set the zoom to the smaller scale, constrained within MIN_ZOOM and MAX_ZOOM
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.min(zoomX, zoomY)));
+    
+        // Redraw the grid with the new camera and zoom settings
         drawGrid();
     }
 }
