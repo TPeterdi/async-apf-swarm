@@ -642,7 +642,7 @@ public class Robot {
     
     // #region HELPERS
     private void calculateMoveTowardsTargetToTheLeft(Coordinate ri, Coordinate ti) {
-        if (!noOtherRobotInSubPath(ti, ri))
+        if (!noOtherRobotInSubPath(ti, ri, false))
             return;
 
         if (isRiAndTiOnSameLine(ri, ti)) {
@@ -675,7 +675,7 @@ public class Robot {
         if (!noInnerRobotWithTjAtLeftOfRj())
             return;
 
-        if (!noOtherRobotInSubPath(ri, ti))
+        if (!noOtherRobotInSubPath(ri, ti, true))
             return;
 
         if (isRiAndTiOnSameLine(ri, ti)) {
@@ -733,9 +733,15 @@ public class Robot {
             : wx > cx;
     }
 
-    private boolean noOtherRobotInSubPath(Coordinate left, Coordinate right) {
-        int startIndex = OrientationHelper.coordinateToIndex(left, currentConfiguration.getWidth()) + 1;
-        int endIndex = OrientationHelper.coordinateToIndex(right, currentConfiguration.getWidth()) - 1;
+    private boolean noOtherRobotInSubPath(Coordinate left, Coordinate right, boolean robotIsLeft) {
+        int startIndex = OrientationHelper.coordinateToIndex(left, currentConfiguration.getWidth());
+        int endIndex = OrientationHelper.coordinateToIndex(right, currentConfiguration.getWidth());
+        if (robotIsLeft) {
+            startIndex += 1;
+        }
+        else {
+            endIndex -= 1;
+        }
         for (int i = startIndex; i <= endIndex; i++) {
             if (Boolean.TRUE.equals(currentConfiguration.getBinaryRepresentation().get(i))) {
                 return false;

@@ -1,7 +1,9 @@
 package async.apf.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import async.apf.interfaces.IEvent;
 import async.apf.interfaces.IEventListener;
@@ -108,6 +110,8 @@ public class Simulation implements IEventListener {
         int currentY = currentCoordinate.getY();
         globalEventEmitter.emitEvent(new SimulationEvent(robotIndex, SimulationEventType.ROBOT_MOVING, phase, currentX, currentY, currentX + dx, currentY + dy));
         currentCoordinate.moveBy(dx, dy);
+
+        checkForCollisions();
     }
 
     private List<Coordinate> translateConfigurationToRobotsCoordinate(Coordinate robotCoordinate) {
@@ -116,6 +120,20 @@ public class Simulation implements IEventListener {
             translatedCoordinates.add(coordinate.translate(robotCoordinate));
         }
         return translatedCoordinates;
+    }
+
+    private void checkForCollisions() {
+        Set<Coordinate> seenPoints = new HashSet<>();
+        Set<Coordinate> collisions = new HashSet<>();
+        
+        for (Coordinate coordinate : this.currentConfiguration)
+            if (!seenPoints.add(coordinate))
+                // If add returns false, the current coordinate is a duplicate!
+                collisions.add(coordinate);
+        
+        if (!collisions.isEmpty())
+            for (Coordinate coordinate : collisions)
+                System.err.println("Collision at " + coordinate.toString() + "!");
     }
 
     @Override
