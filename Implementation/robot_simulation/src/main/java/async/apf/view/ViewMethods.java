@@ -63,7 +63,8 @@ public class ViewMethods {
         Button importButton = new Button("Import from file (csv)");
         importButton.setOnAction(e -> {
             openCsvFile(newWindow, initialStatesTemp);
-            stringToRobotState(initialStatesTemp, initialStates);
+            stringToRobotState(initialStatesTemp, initialStatesOriginal);
+            copyCoordinates();
             newWindow.close();
             simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, getCoordinatesFromRobotStates(initialStates)));
             checkStates();
@@ -400,9 +401,10 @@ public class ViewMethods {
         List<Coordinate> randomTargetPattern = generateCoordinates(robotCount, targetMaxW, targetMaxH);
 
         for (int idx = 0; idx < randomInitialPattern.size(); idx++) {
-            this.initialStates.add(new RobotViewState(randomInitialPattern.get(idx)));
+            this.initialStatesOriginal.add(new RobotViewState(randomInitialPattern.get(idx)));
             this.targetStates.add(randomTargetPattern.get(idx));
         }
+        copyCoordinates();
         simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, getCoordinatesFromRobotStates(initialStates)));
         simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
         simulationStartButton.setDisable(false);
