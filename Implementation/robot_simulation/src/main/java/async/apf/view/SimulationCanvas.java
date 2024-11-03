@@ -2,7 +2,7 @@ package async.apf.view;
 
 import java.util.List;
 
-import async.apf.model.Coordinate;
+import async.apf.interfaces.IPositioned;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseButton;
@@ -10,11 +10,10 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.paint.Color;
 
-public final class SimulationCanvas extends Canvas {
-    private static final double MIN_ZOOM = 0.5;
+public final class SimulationCanvas<T extends IPositioned> extends Canvas {
+    private static final double MIN_ZOOM = 0.3;
     private static final double MAX_ZOOM = 5.0;
     private static final double GRID_SPACING = 20.0;
-    private static final double POINT_RADIUS = 5.0;
 
     private double cameraX = 0;
     private double cameraY = 0;
@@ -23,18 +22,17 @@ public final class SimulationCanvas extends Canvas {
     private double dragStartY;
     
     private final GraphicsContext gc;
-    private List<Coordinate> coordinates;
+    private final List<T> items;
+    // Track the currently selected item
+    private T selectedItem = null;
 
-    private Color color;
-    
     // Fields to track the last hovered grid tile
     private int lastHoveredTileX = Integer.MIN_VALUE;
     private int lastHoveredTileY = Integer.MIN_VALUE;
 
-    public SimulationCanvas(double width, double height, List<Coordinate> coordinates, Color color) {
+    public SimulationCanvas(double width, double height, List<T> items) {
         super(width, height);
-        this.coordinates = coordinates;
-        this.color = color;
+        this.items = items;
         this.gc = this.getGraphicsContext2D();
 
         // Mouse events
@@ -46,14 +44,40 @@ public final class SimulationCanvas extends Canvas {
         this.fitView();
     }
 
-    public SimulationCanvas(double width, double height, List<Coordinate> coordinates) {
-        this(width, height, coordinates, Color.BLUE);
-    }
-
     private void onMousePressed(MouseEvent e) {
         if (e.getButton() == MouseButton.PRIMARY) {
             dragStartX = e.getX();
             dragStartY = e.getY();
+
+            double worldX = (e.getX() - (getWidth() / 2)) / zoom + cameraX; // Convert screen coordinates to world coordinates
+            double worldY = -(e.getY() - (getHeight() / 2)) / zoom + cameraY;
+    
+            int tileX = (int)Math.floor(worldX / GRID_SPACING + 0.5);
+            int tileY = (int)Math.floor(worldY / GRID_SPACING + 0.5);
+    
+            T item = findItem(tileX, tileY);
+            if (item != null) {
+                // Toggle selection
+                if (selectedItem == item) {
+                    // Deselect the item
+                    selectedItem.unfollow();
+                    refreshAt(selectedItem.getCoordinate().getX(), selectedItem.getCoordinate().getY());
+                    selectedItem = null;
+                    refreshAt(tileX, tileY);
+                }
+                else {
+                    // Select the item
+                    if (selectedItem != null) {
+                        selectedItem.unfollow();
+                        refreshAt(selectedItem.getCoordinate().getX(), selectedItem.getCoordinate().getY());
+                    }
+                    selectedItem = item;
+                    item.follow();
+                    refreshAt(tileX, tileY);
+                }
+            }
+            // Redraw or update the hover info for the selected item
+            updateTileInfo(tileX, tileY, worldX, worldY);
         }
     }
 
@@ -87,6 +111,29 @@ public final class SimulationCanvas extends Canvas {
         drawGrid();
     }
 
+    private void onMouseMoved(MouseEvent e) {
+        // Convert screen coordinates to world coordinates
+        double mouseX = e.getX();
+        double mouseY = e.getY();
+    
+        double worldX = (mouseX - getWidth() / 2) / zoom + cameraX;
+        double worldY = -(mouseY - getHeight() / 2) / zoom + cameraY;
+    
+        // Calculate grid tile coordinates
+        int tileX = (int) Math.floor(worldX / GRID_SPACING + 0.5);
+        int tileY = (int) Math.floor(worldY / GRID_SPACING + 0.5);
+    
+        if (tileX != lastHoveredTileX || tileY != lastHoveredTileY) {
+            lastHoveredTileX = tileX;
+            lastHoveredTileY = tileY;
+        }
+        if (selectedItem != null) {
+            selectedItem.hoverEffect(gc, getWidth(), getHeight(), worldX, worldY, zoom);
+        } else {
+            updateTileInfo(tileX, tileY, worldX, worldY);
+        }
+    }
+
     private void drawGrid() {
         double width = getWidth();
         double height = getHeight();
@@ -114,41 +161,78 @@ public final class SimulationCanvas extends Canvas {
 
         // Draw origin marker
         // -- only use for debugging --
-        double originScreenX = width / 2 - cameraX * zoom;
-        double originScreenY = height / 2 + cameraY * zoom;
-        gc.setStroke(Color.RED);
-        gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
-        gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
+        // double originScreenX = width / 2 - cameraX * zoom;
+        // double originScreenY = height / 2 + cameraY * zoom;
+        // gc.setStroke(Color.RED);
+        // gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
+        // gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
 
         // Draw points on the grid
-        drawPoints(this.color, width, height);
+        drawPoints(width, height);
     }
+    
+    public void drawGridCell(int x, int y) {
+        // Convert grid coordinates to world space coordinates
+        double cellCenterWorldX = x * GRID_SPACING;
+        double cellCenterWorldY = y * GRID_SPACING;
 
-    private void drawPoints(Color color, double width, double height) {
-        if (coordinates == null) return;
+        // Convert world coordinates to screen coordinates
+        double screenX = getWidth() / 2 + (cellCenterWorldX - cameraX) * zoom;
+        double screenY = getHeight() / 2 - (cellCenterWorldY - cameraY) * zoom;
 
-        gc.setFill(color);
+        // Calculate bounds for the cell, taking zoom into account
+        double halfCellSize = GRID_SPACING * zoom / 2;
+        double clearX = screenX - halfCellSize;
+        double clearY = screenY - halfCellSize;
+        double clearSize = GRID_SPACING * zoom;
 
-        for (Coordinate point : coordinates) {
-            double screenX = width / 2 + (point.getX() * GRID_SPACING - cameraX) * zoom;
-            double screenY = height / 2 - (point.getY() * GRID_SPACING - cameraY) * zoom;
+        // Clear only the area around the specified cell
+        gc.clearRect(clearX, clearY, clearSize, clearSize);
 
-            gc.fillOval(
-                screenX - POINT_RADIUS * zoom / 2,
-                screenY - POINT_RADIUS * zoom / 2,
-                POINT_RADIUS * zoom,
-                POINT_RADIUS * zoom
-            );
+        // Draw the grid lines around this cell
+        gc.setStroke(Color.LIGHTGRAY);
+        gc.setLineWidth(zoom);
+
+        // Draw vertical and horizontal lines for the cell borders
+        gc.strokeLine(screenX - halfCellSize, screenY - halfCellSize, screenX + halfCellSize, screenY - halfCellSize);
+        gc.strokeLine(screenX - halfCellSize, screenY + halfCellSize, screenX + halfCellSize, screenY + halfCellSize);
+        gc.strokeLine(screenX - halfCellSize, screenY - halfCellSize, screenX - halfCellSize, screenY + halfCellSize);
+        gc.strokeLine(screenX + halfCellSize, screenY - halfCellSize, screenX + halfCellSize, screenY + halfCellSize);
+
+    
+        // Draw any item located in this cell, if applicable
+        T item = findItem(x, y);
+        if (item != null) {
+            item.drawOnCanvas(gc, screenX, screenY, zoom);
+            if (lastHoveredTileX == x && lastHoveredTileY == y)
+                updateTileInfo(x, y, screenX, screenY);
         }
     }
 
-    public void setDisplayedPoints(List<Coordinate> points) {
-        this.coordinates = points;
-        drawGrid();  // Redraw the grid with the new points
+    private void drawPoints(double width, double height) {
+        if (items == null) return;
+
+        for (IPositioned item : items) {
+            double screenX = width / 2 + (item.getCoordinate().getX() * GRID_SPACING - cameraX) * zoom;
+            double screenY = height / 2 - (item.getCoordinate().getY() * GRID_SPACING - cameraY) * zoom;
+            item.drawOnCanvas(gc, screenX, screenY, zoom);
+        }
+    }
+    
+    private T findItem(int x, int y) {
+        for (T item : items)
+            if (item.getCoordinate().getX() == x &&
+                item.getCoordinate().getY() == y)
+                return item;
+        return null;
     }
 
     public void refresh() {
         drawGrid();
+    }
+
+    public void refreshAt(int x, int y) {
+        drawGridCell(x, y);
     }
 
     public void fitView() {
@@ -158,9 +242,9 @@ public final class SimulationCanvas extends Canvas {
         int maxY = Integer.MIN_VALUE;
 
         // Iterate over the points to find the min and max x, y values
-        for (Coordinate point : this.coordinates) {
-            int x = point.getX();
-            int y = point.getY();
+        for (IPositioned point : this.items) {
+            int x = point.getCoordinate().getX();
+            int y = point.getCoordinate().getY();
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
             maxX = Math.max(maxX, x);
@@ -179,8 +263,8 @@ public final class SimulationCanvas extends Canvas {
         double width = getWidth();
         double height = getHeight();
     
-        double boundingBoxWidth = (maxX - minX + 3) * GRID_SPACING;
-        double boundingBoxHeight = (maxY - minY + 6) * GRID_SPACING;
+        double boundingBoxWidth = (maxX - minX + 4) * GRID_SPACING;
+        double boundingBoxHeight = (maxY - minY + 7) * GRID_SPACING;
     
         double zoomX = width / boundingBoxWidth;
         double zoomY = height / boundingBoxHeight;
@@ -192,23 +276,13 @@ public final class SimulationCanvas extends Canvas {
         drawGrid();
     }
 
-    private void onMouseMoved(MouseEvent e) {
-        // Convert screen coordinates to world coordinates
-        double mouseX = e.getX();
-        double mouseY = e.getY();
-    
-        double worldX = (mouseX - getWidth() / 2) / zoom + cameraX;
-        double worldY = -(mouseY - getHeight() / 2) / zoom + cameraY;
-    
-        // Calculate grid tile coordinates
-        int tileX = (int) Math.floor(worldX / GRID_SPACING + 0.5);
-        int tileY = (int) Math.floor(worldY / GRID_SPACING + 0.5);
-    
-        // Check if we're hovering over a new tile
-        if (tileX != lastHoveredTileX || tileY != lastHoveredTileY) {
-            System.out.printf("Entered tile: (%d, %d)%n", tileX, tileY);
-            lastHoveredTileX = tileX;
-            lastHoveredTileY = tileY;
+    private void updateTileInfo(int tileX, int tileY, double worldX, double worldY) {
+        T item = findItem(tileX, tileY);
+        if (item == null) {
+            drawGrid();
+        }
+        else {
+            item.hoverEffect(gc, getWidth(), getHeight(), worldX, worldY, zoom);
         }
     }
 }

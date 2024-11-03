@@ -3,8 +3,8 @@ import async.apf.controller.Controller;
 import async.apf.interfaces.IController;
 import async.apf.interfaces.IModel;
 import async.apf.interfaces.IView;
-import async.apf.model.Coordinate;
 import async.apf.model.Model;
+import async.apf.model.RobotState;
 import async.apf.model.events.EventEmitter;
 import async.apf.model.events.SimulationEvent;
 import javafx.application.Application;
@@ -32,12 +32,12 @@ public class View extends Application implements IView {
         Button setInitialStateButton = new Button("Set initial state");
         Button setTargetStateButton = new Button("Set target state");
         
-        LabeledPositiveIntegerField robotCountField = new LabeledPositiveIntegerField("Robot count", 30);
-        LabeledPositiveIntegerField randomInitialMaxWidthField = new LabeledPositiveIntegerField("Initial pattern max width", 10);
-        LabeledPositiveIntegerField randomInitialMaxHeightField = new LabeledPositiveIntegerField("Initial pattern max height", 10);
+        LabeledPositiveIntegerField robotCountField = new LabeledPositiveIntegerField("Robot count", 10);
+        LabeledPositiveIntegerField randomInitialMaxWidthField = new LabeledPositiveIntegerField("Initial pattern max width", 6);
+        LabeledPositiveIntegerField randomInitialMaxHeightField = new LabeledPositiveIntegerField("Initial pattern max height", 8);
         HBox randomInitialRow = new HBox(10, randomInitialMaxWidthField, randomInitialMaxHeightField);
-        LabeledPositiveIntegerField randomTargetMaxWidthField = new LabeledPositiveIntegerField("Target pattern max width", 10);
-        LabeledPositiveIntegerField randomTargetMaxHeightField = new LabeledPositiveIntegerField("Target pattern max height", 10);
+        LabeledPositiveIntegerField randomTargetMaxWidthField = new LabeledPositiveIntegerField("Target pattern max width", 8);
+        LabeledPositiveIntegerField randomTargetMaxHeightField = new LabeledPositiveIntegerField("Target pattern max height", 8);
         HBox randomTargetRow = new HBox(10, randomTargetMaxWidthField, randomTargetMaxHeightField);
 
         Button generateRandomPatternsButton = new Button("Randomize input");
@@ -114,34 +114,44 @@ public class View extends Application implements IView {
 
     // Handle robot-specific events
     private void handleRobotEvent(SimulationEvent event) {
-        switch (event.getEventType()) {
-            case ROBOT_LOOKING:
-                // System.out.println("View: Robot " + event.getRobotId() + " is looking around.");
-                break;
-            case ROBOT_COMPUTING:
-                // System.out.println("View: Robot " + event.getRobotId() + " is computing data.");
-                break;
-            case ROBOT_MOVING:
-                System.out.println("View: Robot " + event.getRobotId() +
-                        "\tcalculated PHASE " + event.getPhase() +
-                        " and moved from (" + event.getFromX() + "," + event.getFromY() + ")"+
-                                    " to (" + event.getToX()   + "," + event.getToY()   + ")");
-                for (Coordinate coord : viewMethods.initialStates){
-                    if (coord.getX() == event.getFromX() && coord.getY() == event.getFromY()) {
-                        coord.setX(event.getToX());
-                        coord.setY(event.getToY());
-                        break;
-                    }
-                }
-                // System.out.println("State: " + viewMethods.initialStates);
-                viewMethods.refreshCanvas();
+        int fx = event.getFromX();
+        int fy = event.getFromY();
+        RobotViewState robot = findRobotAt(fx, fy);
+        if (robot == null)
+            return;
+        
+        int tx = event.getToX();
+        int ty = event.getToY();
 
-                break;
-            case ROBOT_IDLE:
-                // System.out.println("View: Robot " + event.getRobotId() + " is idle.");
-                break;
-            default:
-                break;
+        switch (event.getEventType()) {
+            case ROBOT_IDLE ->      robot.setState(RobotState.IDLE);
+            case ROBOT_LOOKING ->   robot.setState(RobotState.LOOK);
+            case ROBOT_COMPUTING -> robot.setState(RobotState.COMPUTE);
+            case ROBOT_MOVING -> {
+                System.out.println("View: Robot " + event.getRobotId() +
+                    "\tcalculated PHASE " + event.getPhase() +
+                    " and moved from (" + event.getFromX() + "," + event.getFromY() + ")"+
+                            " to (" + event.getToX()   + "," + event.getToY()   + ")");
+                
+                robot.incrementStepCount();
+                robot.setState(RobotState.MOVE);
+                robot.getCoordinate().setX(event.getToX());
+                robot.getCoordinate().setY(event.getToY());
+            }
+            default -> {}
         }
+        viewMethods.refreshCanvas(fx, fy);
+        if (fx != tx || fy != ty) {
+            viewMethods.refreshCanvas(tx, ty);
+        }
+    }
+
+    private RobotViewState findRobotAt(int x, int y) {
+        for (RobotViewState coord : viewMethods.initialStates)
+            if (coord.getCoordinate().getX() == x &&
+                coord.getCoordinate().getY() == y)
+                return coord;
+
+        return null;
     }
 }

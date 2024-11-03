@@ -24,7 +24,6 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -34,15 +33,18 @@ public class ViewMethods {
     private VBox simulationControlsVBox;
 
     public Button simulationStartButton;
-    public Boolean isSimulationStarted = false;
-    public Boolean isSimulationRunning = false;
-    public Boolean isSimulationFinished = false;
+    public boolean isSimulationStarted = false;
+    public boolean isSimulationRunning = false;
+    public boolean isSimulationFinished = false;
     public Stage newWindow;
+
     private final List<String[]> initialStatesTemp = new ArrayList<>();
     private final List<String[]> targetStatesTemp = new ArrayList<>();
-    public List<Coordinate> initialStates = new ArrayList<>();
-    public final List<Coordinate> initialStatesOriginal = new ArrayList<>();
+
+    public List<RobotViewState> initialStates = new ArrayList<>();
+    public final List<RobotViewState> initialStatesOriginal = new ArrayList<>();
     public final List<Coordinate> targetStates = new ArrayList<>();
+
     private EventEmitter simulationEventEmitter;
 
     public ViewMethods(EventEmitter simulationEventEmitter) {
@@ -61,9 +63,9 @@ public class ViewMethods {
         Button importButton = new Button("Import from file (csv)");
         importButton.setOnAction(e -> {
             openCsvFile(newWindow, initialStatesTemp);
-            stringToCoordinate(initialStatesTemp, initialStates);
+            stringToRobotState(initialStatesTemp, initialStates);
             newWindow.close();
-            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
+            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, getCoordinatesFromRobotStates(initialStates)));
             checkStates();
         });
 
@@ -76,10 +78,10 @@ public class ViewMethods {
         Button confirmButton = new Button("Confirm");
         confirmButton.setOnAction(e -> {
             initialStatesTemp.add(textField.getText().split(";"));
-            stringToCoordinate(initialStatesTemp, initialStatesOriginal);
+            stringToRobotState(initialStatesTemp, initialStatesOriginal);
             copyCoordinates();
             newWindow.close();
-            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
+            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, getCoordinatesFromRobotStates(initialStates)));
             checkStates();
         });
 
@@ -88,6 +90,14 @@ public class ViewMethods {
 
         newWindow.setScene(scene);
         newWindow.show();
+    }
+
+    private List<Coordinate> getCoordinatesFromRobotStates(List<RobotViewState> states) {
+        List<Coordinate> result = new ArrayList<>();
+        for (RobotViewState state : states) {
+            result.add(state.getCoordinate());
+        }
+        return result;
     }
 
     public void openTargetWindow() {
@@ -134,8 +144,8 @@ public class ViewMethods {
         newWindow = new Stage();
         newWindow.setTitle("Simulation");
 
-        simulationCanvas = new SimulationCanvas(400, 400, initialStates);
-        Canvas targetCanvas = new SimulationCanvas(400, 400, targetStates, Color.RED);
+        simulationCanvas = new SimulationCanvas<RobotViewState>(400, 400, initialStates);
+        Canvas targetCanvas = new SimulationCanvas<Coordinate>(400, 400, targetStates);
 
         Label simulationLabel = new Label("Simulation");
         Label targetLabel = new Label("Target State");
@@ -287,8 +297,8 @@ public class ViewMethods {
     }
 
     private void copyCoordinates() {
-        for (Coordinate coord : this.initialStatesOriginal) {
-            this.initialStates.add(coord.copy());
+        for (RobotViewState state : this.initialStatesOriginal) {
+            this.initialStates.add(new RobotViewState(state.getCoordinate().copy()));
         }
     }
 
@@ -330,8 +340,23 @@ public class ViewMethods {
         }
     }
 
+    private void stringToRobotState(List<String[]> from, List<RobotViewState> to){
+        for (String[] row : from) {
+            for (String entry : row) {
+                String[] parts = entry.split(",");
+                int x = Integer.parseInt(parts[0].trim());
+                int y = Integer.parseInt(parts[1].trim());
+                to.add(new RobotViewState(new Coordinate(x, y)));
+            }
+        }
+    }
+
     public void refreshCanvas() {
         simulationCanvas.refresh();
+    }
+
+    public void refreshCanvas(int x, int y) {
+        simulationCanvas.refreshAt(x, y);
     }
 
     public void refreshControlsVBox(Stage window) {
@@ -358,10 +383,10 @@ public class ViewMethods {
         List<Coordinate> randomTargetPattern = generateCoordinates(robotCount, targetMaxW, targetMaxH);
 
         for (int idx = 0; idx < randomInitialPattern.size(); idx++) {
-            this.initialStates.add(randomInitialPattern.get(idx));
+            this.initialStates.add(new RobotViewState(randomInitialPattern.get(idx)));
             this.targetStates.add(randomTargetPattern.get(idx));
         }
-        simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
+        simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, getCoordinatesFromRobotStates(initialStates)));
         simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
         simulationStartButton.setDisable(false);
     }

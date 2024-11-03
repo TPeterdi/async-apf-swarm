@@ -2,9 +2,12 @@ package async.apf.model;
 
 import java.util.Objects;
 
+import async.apf.interfaces.IPositioned;
 import async.apf.model.enums.Cardinal;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 
-public class Coordinate {
+public class Coordinate implements IPositioned {
     private int x;
     private int y;
 
@@ -117,5 +120,42 @@ public class Coordinate {
     @Override
     public int hashCode() {
         return Objects.hash(x + "," + y);
+    }
+
+    private static final double POINT_RADIUS = 5.0;
+    @Override
+    public void drawOnCanvas(GraphicsContext gc, double screenX, double screenY, double zoom) {
+        gc.setFill(Color.DODGERBLUE);
+        gc.fillOval(
+            screenX - POINT_RADIUS * zoom / 2,
+            screenY - POINT_RADIUS * zoom / 2,
+            POINT_RADIUS * zoom,
+            POINT_RADIUS * zoom
+        );
+    }
+
+    @Override
+    public Coordinate getCoordinate() {
+        return this;
+    }
+
+    @Override
+    public void hoverEffect(GraphicsContext gc, double width, double height, double screenX, double screenY, double zoom) {
+    }
+
+    private boolean followed = false;
+    @Override
+    public boolean isFollowed() {
+        return followed;
+    }
+
+    @Override
+    public void follow() {
+        followed = true;
+    }
+
+    @Override
+    public void unfollow() {
+        followed = false;
     }
 }

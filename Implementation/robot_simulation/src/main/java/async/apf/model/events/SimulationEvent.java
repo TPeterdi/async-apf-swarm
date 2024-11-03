@@ -17,7 +17,7 @@ public class SimulationEvent implements IEvent {
     private final int toX;
     private final int toY;
 
-    // Constructor for robot-specific events (with movement data)
+    // Constructor for robot-specific events
     public SimulationEvent(int robotIndex, SimulationEventType eventType, int phase, int fromX, int fromY, int toX, int toY) {
         this.isGlobal = false;
 
@@ -29,18 +29,6 @@ public class SimulationEvent implements IEvent {
         this.fromY = fromY;
         this.toX = toX;
         this.toY = toY;
-    }
-    public SimulationEvent(int robotIndex, SimulationEventType eventType) {
-        this.isGlobal = false;
-        
-        this.robotIndex = robotIndex;
-        this.eventType = eventType;
-        this.phase = -1;
-
-        this.fromX = 0;
-        this.fromY = 0;
-        this.toX = 0;
-        this.toY = 0;
     }
 
     // Constructor for global events

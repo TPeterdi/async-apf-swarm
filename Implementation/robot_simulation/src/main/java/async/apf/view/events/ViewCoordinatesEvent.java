@@ -1,10 +1,12 @@
 package async.apf.view.events;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import async.apf.interfaces.IEvent;
 import async.apf.model.Coordinate;
+import async.apf.view.RobotViewState;
 import async.apf.view.enums.ViewEventType;
 
 public class ViewCoordinatesEvent implements IEvent {
@@ -13,7 +15,10 @@ public class ViewCoordinatesEvent implements IEvent {
 
     public ViewCoordinatesEvent(ViewEventType eventType, List<Coordinate> coordinates) {
         this.eventType = eventType;
-        this.coordinates = coordinates;
+        this.coordinates = new ArrayList<>();
+        for (Coordinate coordinate : coordinates) {
+            this.coordinates.add(coordinate);
+        }
     }
 
     public ViewEventType getEventType() {
