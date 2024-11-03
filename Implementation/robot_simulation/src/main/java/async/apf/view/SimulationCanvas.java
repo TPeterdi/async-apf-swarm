@@ -291,7 +291,7 @@ public final class SimulationCanvas<T extends IPositioned> extends Canvas {
         setWidth(newWidth);
         setHeight(newHeight);
     
-        // Redraw the grid with the updated canvas size
-        drawGrid();
+        // Recalculate camera position and zoom if necessary (e.g., using fitView)
+        fitView();
     }
 }
