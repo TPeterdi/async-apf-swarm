@@ -2,6 +2,7 @@ package async.apf.model;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,7 +19,7 @@ public class Robot {
     private int currentId;
 
     // Prevents COMPUTE cycle to start ahead of time
-    private CompletableFuture lookFuture;
+    private CountDownLatch lookLatch;
 
     // These get evaluated after each LOOK phase
     private RobotOrientation currentConfiguration;
@@ -47,15 +48,15 @@ public class Robot {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
         this.targetPattern.changeOrientation(currentConfiguration.getOrientation(), currentConfiguration.isXMirrored());
-        this.lookFuture.complete(null);
+        this.lookLatch.countDown();
     }
 
     private synchronized void cycleLoop() {
         try {
             // LOOK
-            this.lookFuture = new CompletableFuture();
+            this.lookLatch = new CountDownLatch(1);
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentPhase, this.currentId));
-            this.lookFuture.get();
+            this.lookLatch.await();
             awaitArtificialDelay();
 
             // COMPUTE

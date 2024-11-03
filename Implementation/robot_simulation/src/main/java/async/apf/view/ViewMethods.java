@@ -17,12 +17,12 @@ import async.apf.view.events.ViewSimulationEvent;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -145,20 +145,34 @@ public class ViewMethods {
         newWindow.setTitle("Simulation");
 
         simulationCanvas = new SimulationCanvas<RobotViewState>(400, 400, initialStates);
-        Canvas targetCanvas = new SimulationCanvas<Coordinate>(400, 400, targetStates);
+        SimulationCanvas targetCanvas = new SimulationCanvas<Coordinate>(400, 400, targetStates);
 
         Label simulationLabel = new Label("Simulation");
         Label targetLabel = new Label("Target State");
         simulationLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        simulationLabel.setMaxHeight(24);
         targetLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        targetLabel.setMaxHeight(24);
 
-        VBox simulationBox = new VBox(5, simulationLabel, simulationCanvas);
+        VBox simulationBox = new VBox(0, simulationLabel, simulationCanvas);
         simulationBox.setAlignment(Pos.CENTER);
-        VBox targetBox = new VBox(5, targetLabel, targetCanvas);
+        VBox targetBox = new VBox(0, targetLabel, targetCanvas);
         targetBox.setAlignment(Pos.CENTER);
 
-        HBox canvasesHBox = new HBox(20, simulationBox, targetBox);
-        canvasesHBox.setAlignment(Pos.CENTER);
+        HBox canvasesHBox = new HBox(0, simulationBox, targetBox);
+        // Add listener to resize canvases proportionally to HBox size changes
+        canvasesHBox.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+            double canvasWidth = newWidth.doubleValue() / 2;  // Divide width equally
+            simulationCanvas.resizeCanvas(canvasWidth, canvasesHBox.getHeight() - simulationLabel.getHeight());
+            targetCanvas.resizeCanvas(canvasWidth, canvasesHBox.getHeight() - targetLabel.getHeight());
+        });
+
+        canvasesHBox.heightProperty().addListener((obs, oldHeight, newHeight) -> {
+            simulationCanvas.resizeCanvas(simulationCanvas.getWidth(), newHeight.doubleValue() - simulationLabel.getHeight() - simulationBox.getSpacing());
+            targetCanvas.resizeCanvas(targetCanvas.getWidth(), newHeight.doubleValue() - targetLabel.getHeight() - targetBox.getSpacing());
+        });
+        VBox.setVgrow(canvasesHBox, Priority.ALWAYS);
+
 
         Slider slider = createSlider();
 
@@ -178,13 +192,13 @@ public class ViewMethods {
 
     private Slider createSlider() {
         // Create the slider with min and max values
-        int initialDelayValue = 250;
-        Slider slider = new Slider(0, 500, initialDelayValue);
+        int initialDelayValue = 200;
+        Slider slider = new Slider(0, 400, initialDelayValue);
         this.simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SET_SIMULATION_DELAY, initialDelayValue));
         slider.setShowTickLabels(true);
         slider.setShowTickMarks(true);
         slider.setMajorTickUnit(100);
-        slider.setMinorTickCount(10);
+        slider.setMinorTickCount(25);
         slider.setBlockIncrement(50);
         slider.setSnapToTicks(true);
         // Listener for slider value changes
@@ -192,6 +206,7 @@ public class ViewMethods {
             int sliderValue = newValue.intValue();
             this.simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SET_SIMULATION_DELAY, sliderValue));
         });
+        slider.setPrefHeight(50);
         return slider;
     }
 
@@ -199,7 +214,9 @@ public class ViewMethods {
         Button controllButton = getMainButton(window);
 
         Button closeButton = getCloseButton(window);
-        return new VBox(10, controllButton, closeButton);
+        VBox box = new VBox(10, controllButton, closeButton);
+        box.setPrefHeight(100);
+        return box;
     }
 
     private Button getMainButton(Stage window) {
@@ -285,7 +302,7 @@ public class ViewMethods {
             initialStatesOriginal.clear();
             copyCoordinates();
             window.close();
-            simulationStartButton.setDisable(true);
+            // Close logic here if needed
         });
         return closeButton;
     }
