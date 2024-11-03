@@ -77,7 +77,7 @@ public class View extends Application implements IView {
             generateRandomPatternsButton,
             viewMethods.simulationStartButton
             );
-        Scene scene = new Scene(layout, 800, 600);
+        Scene scene = new Scene(layout, 500, 300);
 
         // Set main window
         primaryStage.setTitle("Robot Simulation");

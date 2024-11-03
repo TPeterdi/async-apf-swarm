@@ -285,4 +285,13 @@ public final class SimulationCanvas<T extends IPositioned> extends Canvas {
             item.hoverEffect(gc, getWidth(), getHeight(), worldX, worldY, zoom);
         }
     }
+    
+    public void resizeCanvas(double newWidth, double newHeight) {
+        // Set new dimensions for the canvas
+        setWidth(newWidth);
+        setHeight(newHeight);
+    
+        // Redraw the grid with the updated canvas size
+        drawGrid();
+    }
 }
