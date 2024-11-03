@@ -10,6 +10,7 @@ import async.apf.model.events.SimulationEvent;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -30,11 +31,35 @@ public class View extends Application implements IView {
 
         Button setInitialStateButton = new Button("Set initial state");
         Button setTargetStateButton = new Button("Set target state");
+        
+        LabeledPositiveIntegerField robotCountField = new LabeledPositiveIntegerField("Robot count", 30);
+        LabeledPositiveIntegerField randomInitialMaxHeightField = new LabeledPositiveIntegerField("Initial pattern max width", 10);
+        LabeledPositiveIntegerField randomInitialMaxWidthField = new LabeledPositiveIntegerField("Initial pattern max height", 10);
+        HBox randomInitialRow = new HBox(10, randomInitialMaxWidthField, randomInitialMaxHeightField);
+        LabeledPositiveIntegerField randomTargetMaxWidthField = new LabeledPositiveIntegerField("Target pattern max width", 10);
+        LabeledPositiveIntegerField randomTargetMaxHeightField = new LabeledPositiveIntegerField("Target pattern max height", 10);
+        HBox randomTargetRow = new HBox(10, randomTargetMaxWidthField, randomTargetMaxHeightField);
+
+        Button generateRandomPatternsButton = new Button("Randomize input");
         viewMethods.simulationStartButton = new Button("Simulation start");
         viewMethods.simulationStartButton.setDisable(true);
 
         setInitialStateButton.setOnAction(e -> viewMethods.openInitialWindow());
         setTargetStateButton.setOnAction(e -> viewMethods.openTargetWindow());
+        generateRandomPatternsButton.setOnAction(e -> {
+            try {
+                viewMethods.generateRandomInputs(
+                    robotCountField.getValue(),
+                    randomInitialMaxWidthField.getValue(),
+                    randomInitialMaxHeightField.getValue(),
+                    randomTargetMaxWidthField.getValue(),
+                    randomTargetMaxHeightField.getValue()
+                );
+            } catch (Exception e1) {
+                // TODO Show error message
+                e1.printStackTrace();
+            }
+        });
         viewMethods.simulationStartButton.setOnAction(e -> {
             System.out.println("Simulation beginning...");
             System.out.println("Initial state: " + viewMethods.initialStates);
@@ -43,7 +68,15 @@ public class View extends Application implements IView {
         });
 
         // Layout
-        VBox layout = new VBox(10, setInitialStateButton, setTargetStateButton, viewMethods.simulationStartButton);
+        VBox layout = new VBox(10,
+            setInitialStateButton,
+            setTargetStateButton,
+            robotCountField,
+            randomInitialRow,
+            randomTargetRow,
+            generateRandomPatternsButton,
+            viewMethods.simulationStartButton
+            );
         Scene scene = new Scene(layout, 800, 600);
 
         // Set main window

@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 import async.apf.model.Coordinate;
 import async.apf.model.events.EventEmitter;
@@ -24,7 +27,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
@@ -75,11 +77,7 @@ public class ViewMethods {
             openCsvFile(newWindow, initialStatesTemp);
             stringToCoordinate(initialStatesTemp, initialStates);
             newWindow.close();
-            try {
-                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
+            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
             checkStates();
         });
 
@@ -95,11 +93,7 @@ public class ViewMethods {
             stringToCoordinate(initialStatesTemp, initialStatesOriginal);
             copyCoordinates();
             newWindow.close();
-            try {
-                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
+            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
             checkStates();
         });
 
@@ -123,11 +117,7 @@ public class ViewMethods {
             openCsvFile(newWindow, targetStatesTemp);
             stringToCoordinate(targetStatesTemp, targetStates);
             newWindow.close();
-            try {
-                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
+            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
             checkStates();
         });
 
@@ -143,11 +133,7 @@ public class ViewMethods {
             targetStatesTemp.add(textField.getText().split(";"));
             stringToCoordinate(targetStatesTemp, targetStates);
             newWindow.close();
-            try {
-                simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
+            simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
             checkStates();
         });
 
@@ -561,5 +547,48 @@ public class ViewMethods {
         });
     }
 
+    public void generateRandomInputs(int robotCount, int initMaxW, int initMaxH, int targetMaxW, int targetMaxH) throws Exception {
+        if (robotCount < 1) throw new Exception("Robot count must be at least 1!");
+        if (initMaxW < 1) throw new Exception("Initial max width must be at least 1!");
+        if (initMaxH < 1) throw new Exception("Initial max height must be at least 1!");
+        if (targetMaxW < 1) throw new Exception("Target max width must be at least 1!");
+        if (targetMaxH < 1) throw new Exception("Target max height must be at least 1!");
+        if (initMaxW * initMaxH < robotCount) throw new Exception("Robots can't fit the initial area!");
+        if (targetMaxW * targetMaxH < robotCount) throw new Exception("Robots can't fit the target area!");
 
+        this.initialStates.clear();
+        this.targetStates.clear();
+
+        List<Coordinate> randomInitialPattern = generateCoordinates(robotCount, initMaxW, initMaxH);
+        List<Coordinate> randomTargetPattern = generateCoordinates(robotCount, targetMaxW, targetMaxH);
+
+        for (int idx = 0; idx < randomInitialPattern.size(); idx++) {
+            this.initialStates.add(randomInitialPattern.get(idx));
+            this.targetStates.add(randomTargetPattern.get(idx));
+        }
+        simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_INITIAL_CONFIG, initialStates));
+        simulationEventEmitter.emitEvent(new ViewCoordinatesEvent(ViewEventType.LOAD_TARGET_CONFIG, targetStates));
+        simulationStartButton.setDisable(false);
+    }
+
+    private List<Coordinate> generateCoordinates(int count, int width, int height) {
+        Set<Coordinate> coordinates = new HashSet<>();
+        Random random = new Random();
+
+        // Ensure we do not ask for more unique points than possible
+        if (count > width * height) {
+            throw new IllegalArgumentException("Cannot generate more unique coordinates than the area size.");
+        }
+
+        while (coordinates.size() < count) {
+            int x = random.nextInt(width);
+            int y = random.nextInt(height);
+
+            Coordinate point = new Coordinate(x, y);
+            coordinates.add(point);
+        }
+
+        // Convert Set to List and return
+        return new ArrayList<>(coordinates);
+    }
 }
