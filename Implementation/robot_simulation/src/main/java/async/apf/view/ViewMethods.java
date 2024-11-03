@@ -18,14 +18,10 @@ import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -33,7 +29,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class ViewMethods {
-    private Canvas simulationCanvas;
+    private SimulationCanvas simulationCanvas;
     private VBox controlsBox;
     private VBox simulationControlsVBox;
 
@@ -48,16 +44,6 @@ public class ViewMethods {
     public final List<Coordinate> initialStatesOriginal = new ArrayList<>();
     public final List<Coordinate> targetStates = new ArrayList<>();
     private EventEmitter simulationEventEmitter;
-
-    private static final double GRID_SPACING = 50;    // Grid line spacing in world units
-    private static final double MIN_ZOOM = 0.1;       // Minimum zoom level
-    private static final double MAX_ZOOM = 5.0;       // Maximum zoom level
-    private static final double POINT_RADIUS = 15.0;  // Radius of points
-
-    private double cameraX = 0;                       // Camera's X position
-    private double cameraY = 0;                       // Camera's Y position
-    private double zoom = 1.0;                        // Current zoom level
-    private double dragStartX, dragStartY;            // Initial mouse drag positions
 
     public ViewMethods(EventEmitter simulationEventEmitter) {
         this.simulationEventEmitter = simulationEventEmitter;
@@ -148,22 +134,8 @@ public class ViewMethods {
         newWindow = new Stage();
         newWindow.setTitle("Simulation");
 
-        simulationCanvas = new Canvas(400, 400);
-        Canvas targetCanvas = new Canvas(400, 400);
-        GraphicsContext gc = simulationCanvas.getGraphicsContext2D();
-        GraphicsContext gc2 = targetCanvas.getGraphicsContext2D();
-
-        // Draw initial grid
-        drawGrid(gc);
-        drawGridTarget(gc2);
-
-        simulationCanvas.setOnMousePressed(this::onMousePressed);
-        simulationCanvas.setOnMouseDragged(e -> onMouseDragged(e, gc));
-        simulationCanvas.setOnScroll(e -> onScroll(e, gc));
-
-        targetCanvas.setOnMousePressed(this::onMousePressedTarget);
-        targetCanvas.setOnMouseDragged(e -> onMouseDraggedTarget(e, gc2));
-        targetCanvas.setOnScroll(e -> onScrollTarget(e, gc2));
+        simulationCanvas = new SimulationCanvas(400, 400, initialStates);
+        Canvas targetCanvas = new SimulationCanvas(400, 400, targetStates, Color.RED);
 
         Label simulationLabel = new Label("Simulation");
         Label targetLabel = new Label("Target State");
@@ -211,80 +183,6 @@ public class ViewMethods {
             this.simulationEventEmitter.emitEvent(new ViewSimulationEvent(ViewEventType.SET_SIMULATION_DELAY, sliderValue));
         });
         return slider;
-    }
-
-    private void onMousePressed(MouseEvent e) {
-        if (e.getButton() == MouseButton.PRIMARY) {
-            dragStartX = e.getX();
-            dragStartY = e.getY();
-        }
-    }
-
-    private void onMouseDragged(MouseEvent event, GraphicsContext gc) {
-        if (event.getButton() == MouseButton.PRIMARY) {
-            double dx = (event.getX() - dragStartX) / zoom;
-            double dy = (event.getY() - dragStartY) / zoom;
-            cameraX -= dx;
-            cameraY += dy;
-            dragStartX = event.getX();
-            dragStartY = event.getY();
-            drawGrid(gc);
-        }
-    }
-
-    private void onScroll(ScrollEvent event, GraphicsContext gc) {
-        double deltaZoom = event.getDeltaY() > 0 ? 1.1 : 0.9;
-        double newZoom = zoom * deltaZoom;
-        newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-
-        // Calculate the new camera position so that zoom is centered, with inverted y-axis
-        double mouseX = event.getX();
-        double mouseY = event.getY();
-        double offsetX = (mouseX - simulationCanvas.getWidth() / 2) / zoom + cameraX;
-        double offsetY = -(mouseY - simulationCanvas.getHeight() / 2) / zoom + cameraY;  // Inverted y-axis
-
-        cameraX = offsetX - (mouseX - simulationCanvas.getWidth() / 2) / newZoom;
-        cameraY = offsetY + (mouseY - simulationCanvas.getHeight() / 2) / newZoom;       // Inverted y-axis
-
-        zoom = newZoom;
-        drawGrid(gc);
-    }
-
-    private void onMousePressedTarget(MouseEvent e) {
-        if (e.getButton() == MouseButton.PRIMARY) {
-            dragStartX = e.getX();
-            dragStartY = e.getY();
-        }
-    }
-
-    private void onMouseDraggedTarget(MouseEvent event, GraphicsContext gc) {
-        if (event.getButton() == MouseButton.PRIMARY) {
-            double dx = (event.getX() - dragStartX) / zoom;
-            double dy = (event.getY() - dragStartY) / zoom;
-            cameraX -= dx;
-            cameraY += dy;
-            dragStartX = event.getX();
-            dragStartY = event.getY();
-            drawGridTarget(gc);
-        }
-    }
-
-    private void onScrollTarget(ScrollEvent event, GraphicsContext gc) {
-        double deltaZoom = event.getDeltaY() > 0 ? 1.1 : 0.9;
-        double newZoom = zoom * deltaZoom;
-        newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-
-        // Calculate the new camera position so that zoom is centered, with inverted y-axis
-        double mouseX = event.getX();
-        double mouseY = event.getY();
-        double offsetX = (mouseX - simulationCanvas.getWidth() / 2) / zoom + cameraX;
-        double offsetY = -(mouseY - simulationCanvas.getHeight() / 2) / zoom + cameraY;  // Inverted y-axis
-
-        cameraX = offsetX - (mouseX - simulationCanvas.getWidth() / 2) / newZoom;
-        cameraY = offsetY + (mouseY - simulationCanvas.getHeight() / 2) / newZoom;       // Inverted y-axis
-
-        zoom = newZoom;
-        drawGridTarget(gc);
     }
 
     private VBox getvBox(Stage window) {
@@ -382,108 +280,6 @@ public class ViewMethods {
         return closeButton;
     }
 
-    private void drawGrid(GraphicsContext gc) {
-        double width = simulationCanvas.getWidth();
-        double height = simulationCanvas.getHeight();
-        gc.clearRect(0, 0, width, height);
-
-        gc.setStroke(Color.LIGHTGRAY);
-        gc.setLineWidth(zoom);
-
-        // Calculate the scaled grid spacing
-        double scaledGridSpacing = GRID_SPACING * zoom;
-
-        // Offset grid lines to center cells on integer coordinates, with zoom applied
-        double startX = (width / 2 - cameraX * zoom) % scaledGridSpacing - scaledGridSpacing / 2;
-        double startY = (cameraY * zoom + height / 2) % scaledGridSpacing - scaledGridSpacing / 2;
-
-        // Draw vertical and horizontal lines to create grid cells, with scaled spacing
-        for (double x = startX; x < width; x += scaledGridSpacing) {
-            gc.strokeLine(x, 0, x, height);
-        }
-        for (double y = startY; y < height; y += scaledGridSpacing) {
-            gc.strokeLine(0, y, width, y);
-}
-
-        // Draw origin marker at (0,0) in world space
-        double originScreenX = width  / 2 - cameraX * zoom;
-        double originScreenY = height / 2 + cameraY * zoom;
-        gc.setStroke(Color.RED);
-        gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
-        gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
-
-        // Draw points in global coordinates
-        drawPoints(gc, width, height);
-    }
-
-    private void drawPoints(GraphicsContext gc, double width, double height) {
-        gc.setFill(Color.BLUE);
-
-        for (Coordinate point : initialStates) {
-            // Convert global coordinates to screen coordinates
-            double screenX = width  / 2 + (point.getX() * GRID_SPACING - cameraX) * zoom;
-            double screenY = height / 2 - (point.getY() * GRID_SPACING - cameraY) * zoom;
-
-            // Draw the point as a small circle
-            gc.fillOval(
-                screenX - POINT_RADIUS * zoom / 2,
-                screenY - POINT_RADIUS * zoom / 2,
-                POINT_RADIUS * zoom,
-                POINT_RADIUS * zoom);
-        }
-    }
-
-    private void drawGridTarget(GraphicsContext gc) {
-        double width = simulationCanvas.getWidth();
-        double height = simulationCanvas.getHeight();
-        gc.clearRect(0, 0, width, height);
-
-        gc.setStroke(Color.LIGHTGRAY);
-        gc.setLineWidth(zoom);
-
-        // Calculate the scaled grid spacing
-        double scaledGridSpacing = GRID_SPACING * zoom;
-
-        // Offset grid lines to center cells on integer coordinates, with zoom applied
-        double startX = (width / 2 - cameraX * zoom) % scaledGridSpacing - scaledGridSpacing / 2;
-        double startY = (cameraY * zoom + height / 2) % scaledGridSpacing - scaledGridSpacing / 2;
-
-        // Draw vertical and horizontal lines to create grid cells, with scaled spacing
-        for (double x = startX; x < width; x += scaledGridSpacing) {
-            gc.strokeLine(x, 0, x, height);
-        }
-        for (double y = startY; y < height; y += scaledGridSpacing) {
-            gc.strokeLine(0, y, width, y);
-        }
-
-        // Draw origin marker at (0,0) in world space
-        double originScreenX = width  / 2 - cameraX * zoom;
-        double originScreenY = height / 2 + cameraY * zoom;
-        gc.setStroke(Color.RED);
-        gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
-        gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
-
-        // Draw points in global coordinates
-        drawPointsTarget(gc, width, height);
-    }
-
-    private void drawPointsTarget(GraphicsContext gc, double width, double height) {
-        gc.setFill(Color.RED);
-
-        for (Coordinate point : targetStates) {
-            // Convert global coordinates to screen coordinates
-            double screenX = width  / 2 + (point.getX() * GRID_SPACING - cameraX) * zoom;
-            double screenY = height / 2 - (point.getY() * GRID_SPACING - cameraY) * zoom;
-
-            // Draw the point as a small circle
-            gc.fillOval(
-                    screenX - POINT_RADIUS * zoom / 2,
-                    screenY - POINT_RADIUS * zoom / 2,
-                    POINT_RADIUS * zoom,
-                    POINT_RADIUS * zoom);
-        }
-    }
-
     private void checkStates() {
         if (!(initialStatesTemp.isEmpty()) && !(targetStatesTemp.isEmpty())) {
             simulationStartButton.setDisable(false);
@@ -535,8 +331,7 @@ public class ViewMethods {
     }
 
     public void refreshCanvas() {
-        GraphicsContext gc = simulationCanvas.getGraphicsContext2D();
-        drawGrid(gc);
+        simulationCanvas.refresh();
     }
 
     public void refreshControlsVBox(Stage window) {
