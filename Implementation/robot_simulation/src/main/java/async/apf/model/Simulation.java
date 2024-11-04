@@ -62,7 +62,7 @@ public class Simulation implements IEventListener {
                 Robot pickedRobot = this.robots.get(randomIndex);
                 try {
                     if (this.delay > 0) {
-                        int desync = random.nextInt(50);
+                        int desync = random.nextInt(20);
                         Thread.sleep(desync);
                     }
                     pickedRobot.activate(randomIndex, this.delay);

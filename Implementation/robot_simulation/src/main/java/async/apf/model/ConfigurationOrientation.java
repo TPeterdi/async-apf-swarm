@@ -1,7 +1,6 @@
 package async.apf.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -146,6 +145,10 @@ public class ConfigurationOrientation {
 
     public void setOrientation(Cardinal newOrientation) {
         this.orientation = newOrientation;
+    }
+    
+    public void setXMirrored(boolean xMirrored) {
+        this.xMirrored = xMirrored;
     }
 
     public void adjustOrientationByCardinal(Cardinal newCardinal) {

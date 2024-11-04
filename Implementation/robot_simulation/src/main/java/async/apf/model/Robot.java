@@ -48,6 +48,7 @@ public class Robot {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
         this.targetPattern.setOrientation(currentConfiguration.getOrientation());
+        this.targetPattern.setXMirrored(currentConfiguration.isXMirrored());
         this.lookLatch.countDown();
     }
 
@@ -131,7 +132,7 @@ public class Robot {
             
         }
         // flip back
-        if (currentConfiguration.isXMirrored()) {
+        if (currentConfiguration.isXMirrored() && (currentConfiguration.getOrientation() == Cardinal.NORTH || currentConfiguration.getOrientation() == Cardinal.SOUTH)) {
             if (realMovement == Cardinal.EAST)
                 realMovement = Cardinal.WEST;
             else if (realMovement == Cardinal.WEST)

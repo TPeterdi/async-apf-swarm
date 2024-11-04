@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.swing.SwingConstants;
-
 import async.apf.model.enums.Cardinal;
 
 public final class OrientationHelper {
@@ -406,5 +404,23 @@ public final class OrientationHelper {
             if (!coords.contains(rotated)) return false;
         }
         return true;
+    }
+
+    public static String printCoordinateList(List<Coordinate> list) {
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for (Coordinate coordinate : list) {
+            if (first) {
+                first = false;
+            }
+            else {
+                builder.append(";");
+            }
+            builder.append(coordinate.getX());
+            builder.append(",");
+            builder.append(coordinate.getY());
+        }
+
+        return builder.toString();
     }
 }
