@@ -144,77 +144,12 @@ public class ConfigurationOrientation {
         return coordinates;
     }
 
-    public void changeOrientation(Cardinal newCardinal, boolean mirroredState) {
-        changeMirroredState(mirroredState);
-        rotateToCardinal(newCardinal);
-        createCoordinates();
+    public void setOrientation(Cardinal newOrientation) {
+        this.orientation = newOrientation;
     }
 
-    private void changeMirroredState(boolean target) {
-        if (target != xMirrored) mirror();
-    }
-
-    private void mirror() {
-        this.xMirrored = !this.xMirrored;
-
-        List<Boolean> flippedBinaryRepresentation = new ArrayList<>();
-        for (int i = 0; i < binaryRepresentation.size(); i++) {
-            int h = i / width;
-            int w = width - 1 - (i % width);
-            flippedBinaryRepresentation.add(binaryRepresentation.get(h * width + w));
-        }
-        binaryRepresentation = flippedBinaryRepresentation;
-    }
-
-    private void rotateToCardinal(Cardinal newCardinal) {
-        int rotations = cardinalDifference(this.orientation, newCardinal);
-        if (rotations == 0) return;
-
-        List<Boolean> rotatedBinaryRepresentation = new ArrayList<>();
-        switch (rotations) {
-            case 1 -> {
-                rotateBinaryRepresentationBy90Degrees(rotatedBinaryRepresentation);
-            }
-            case 2 -> {
-                rotatedBinaryRepresentation = binaryRepresentation;
-                Collections.reverse(rotatedBinaryRepresentation);
-            }
-            case 3 -> {
-                rotateBinaryRepresentationBy90Degrees(rotatedBinaryRepresentation);
-                Collections.reverse(rotatedBinaryRepresentation);
-            }
-            default -> throw new AssertionError();
-        }
-
-        this.binaryRepresentation = rotatedBinaryRepresentation;
-        this.orientation = newCardinal;
-    }
     public void adjustOrientationByCardinal(Cardinal newCardinal) {
         this.orientation = valueToCardinal(cardinalValue(this.orientation) + cardinalValue(newCardinal));
-    }
-
-    private void rotateBinaryRepresentationBy90Degrees(List<Boolean> rotatedBinaryRepresentation) {
-        for (int i = 0; i < binaryRepresentation.size(); i++) {
-            int ti;
-            int imh = i % height;
-            int idh = i / height;
-            if (idh % 2 == 0) {
-                if (i % 2 == 0)
-                    ti = (imh + 1) * width - (idh + 1);
-                else
-                    ti = (imh + 1) * width - (width - idh);
-            }
-            else {
-                if (i % 2 == 0)
-                    ti = (height - imh) * width - (width - idh);
-                else
-                    ti = (height - imh) * width - (idh + 1);
-            }
-            rotatedBinaryRepresentation.add(binaryRepresentation.get(ti));
-        }
-        int tmp = height;
-        height = width;
-        width = tmp;
     }
 
     private int cardinalValue(Cardinal cardinal) {

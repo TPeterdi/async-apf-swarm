@@ -47,7 +47,7 @@ public class Robot {
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
-        this.targetPattern.changeOrientation(currentConfiguration.getOrientation(), currentConfiguration.isXMirrored());
+        this.targetPattern.setOrientation(currentConfiguration.getOrientation());
         this.lookLatch.countDown();
     }
 

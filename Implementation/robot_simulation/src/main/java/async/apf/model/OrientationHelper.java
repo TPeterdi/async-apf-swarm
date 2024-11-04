@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import javax.swing.SwingConstants;
+
 import async.apf.model.enums.Cardinal;
 
 public final class OrientationHelper {
@@ -178,7 +180,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     true,  true,  false),
                     Cardinal.EAST,
-                    false,
+                    true,
                     width,
                     height);
     
@@ -186,7 +188,7 @@ public final class OrientationHelper {
                     snakeIterate(positionMatrix, x -> x, width, height,
                     true,  false, false),
                     Cardinal.EAST,
-                    true,
+                    false,
                     width,
                     height);
     
@@ -321,28 +323,31 @@ public final class OrientationHelper {
     }
 
     private static Coordinate getSelfPosition(List<Coordinate> copy, ConfigurationOrientation orientedConfiguration) {
-        Coordinate selfPosition = null;
-        for (Coordinate coordinate : copy) {
-            if (coordinate.getX() == 0 && coordinate.getY() == 0) {
-                selfPosition = coordinate;
-                continue;
-            }
-            
-            coordinate.counterRotateByCardinal(orientedConfiguration.getOrientation());
-            if (orientedConfiguration.isXMirrored()) {
-                coordinate.setX(-coordinate.getX());
-            }
-        }
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
         for (Coordinate coordinate : copy) {
             minX = Math.min(coordinate.getX(), minX);
             minY = Math.min(coordinate.getY(), minY);
+            maxX = Math.max(coordinate.getX(), maxX);
+            maxY = Math.max(coordinate.getY(), maxY);
         }
-        // selfPosition should never be actually null here.
-        selfPosition.setX(-minX);
-        selfPosition.setY(-minY);
-        return selfPosition;
+
+        return switch(orientedConfiguration.getOrientation()) {
+            case NORTH ->  orientedConfiguration.isXMirrored()
+                ? new Coordinate(maxX, -minY)
+                : new Coordinate(-minX, -minY);
+            case EAST ->  orientedConfiguration.isXMirrored()
+                ? new Coordinate(-minY, -minX)
+                : new Coordinate(maxY, -minX);
+            case SOUTH ->  orientedConfiguration.isXMirrored()
+                ? new Coordinate(-minX, maxY)
+                : new Coordinate(maxX, maxY);
+            case WEST ->  orientedConfiguration.isXMirrored()
+                ? new Coordinate(maxY, maxX)
+                : new Coordinate(-minY, maxX);
+        };
     }
 
     public static boolean isSymmetric(List<Coordinate> coordinates) {
