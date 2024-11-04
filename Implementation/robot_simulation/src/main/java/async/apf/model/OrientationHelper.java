@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.swing.SwingConstants;
-
 import async.apf.model.enums.Cardinal;
 
 public final class OrientationHelper {
@@ -31,13 +29,17 @@ public final class OrientationHelper {
     }
 
     public static ConfigurationOrientation orientConfiguration(List<Coordinate> configuration) {
+        List<Coordinate> copy = new ArrayList<>();
+        for (Coordinate pos : configuration) {
+            copy.add(new Coordinate(pos.getX(), pos.getY()));
+        }
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
         int maxY = Integer.MIN_VALUE;
 
         // Iterate over the points to find the min and max x, y values
-        for (Coordinate point : configuration) {
+        for (Coordinate point : copy) {
             int x = point.getX();
             int y = point.getY();
             minX = Math.min(minX, x);
@@ -53,21 +55,21 @@ public final class OrientationHelper {
         Coordinate origin = new Coordinate(minX, minY);
 
         // Reposition configuration to the origin.
-        for (Coordinate point : configuration) {
+        for (Coordinate point : copy) {
             point.translateInPlace(origin);
         }
 
         // Rotate the configuration such that it's a "tall" rectangle (height >= width)
         boolean rotated = false;
         if (width > height) {
-            makeConfigurationTall(height, configuration);
+            makeConfigurationTall(height, copy);
             int tmp = height;
             height = width;
             width = tmp;
             rotated = true;
         }
 
-        Boolean[][] positionMatrix = initializePositionMatrix(width, height, configuration);
+        Boolean[][] positionMatrix = initializePositionMatrix(width, height, copy);
         ConfigurationOrientation orientation = findBestOrientation(width, height, positionMatrix);
         if (rotated) {
             orientation.adjustOrientationByCardinal(Cardinal.EAST);
@@ -280,13 +282,11 @@ public final class OrientationHelper {
     }
 
     private static int findX(int outer, int inner, int width, boolean flip, boolean weaveHorizontally, boolean leftToRight) {
-        // It just works (TM)
         return weaveHorizontally
             ? (leftToRight == flip ? width - inner - 1 : inner)
             : (leftToRight ? outer : width - outer - 1);
     }
     private static int findY(int outer, int inner, int height, boolean flip, boolean weaveHorizontally, boolean bottomToTop) {
-        // It just works (TM)
         return weaveHorizontally
             ? (bottomToTop ? outer : height - outer - 1)
             : (bottomToTop == flip ? height - inner - 1 : inner);
@@ -406,5 +406,25 @@ public final class OrientationHelper {
             if (!coords.contains(rotated)) return false;
         }
         return true;
+    }
+
+    public static int cardinalValue(Cardinal cardinal) {
+        return switch (cardinal) {
+            case NORTH -> 0;
+            case WEST  -> 1;
+            case SOUTH -> 2;
+            case EAST  -> 3;
+            default    -> -1;
+        };
+    }
+
+    public static Cardinal valueToCardinal(int value) {
+        return switch ((value + 4) % 4) {
+            case 0  -> Cardinal.NORTH;
+            case 1  -> Cardinal.WEST;
+            case 2  -> Cardinal.SOUTH;
+            case 3  -> Cardinal.EAST;
+            default -> null;
+        };
     }
 }

@@ -1,7 +1,6 @@
 package async.apf.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -78,6 +77,18 @@ public class ConfigurationOrientation {
             .collect(Collectors.joining(""));
     }
 
+    public void mirror() {
+        List<Boolean> newBinaryRepresentation = new ArrayList<>();
+        for (int idx = 0; idx < binaryRepresentation.size(); idx++) {
+            int x = width - 1 - (idx % width);
+            int y = idx / width;
+            newBinaryRepresentation.add(binaryRepresentation.get(y * width + x));
+        }
+        binaryRepresentation = newBinaryRepresentation;
+        createCoordinates();
+        xMirrored = !xMirrored;
+    }
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -111,10 +122,8 @@ public class ConfigurationOrientation {
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
 
-        Coordinate diff = coordinates.get(0).difference(other.coordinates.get(0));
-        for (int idx = 1; idx < coordinates.size() - 1; idx++) {
-            Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(idx));
-            if (!diff.equals(currentDifference)) {
+        for (int idx = 0; idx < coordinates.size() - 1; idx++) {
+            if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
                 return false;
             }
         }
@@ -130,10 +139,8 @@ public class ConfigurationOrientation {
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
 
-        Coordinate diff = coordinates.get(1).difference(other.coordinates.get(1));
-        for (int idx = 2; idx < coordinates.size() - 1; idx++) {
-            Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(idx));
-            if (!diff.equals(currentDifference)) {
+        for (int idx = 1; idx < coordinates.size() - 1; idx++) {
+            if (!coordinates.get(idx).equals(other.coordinates.get(idx))) {
                 return false;
             }
         }
@@ -149,30 +156,6 @@ public class ConfigurationOrientation {
     }
 
     public void adjustOrientationByCardinal(Cardinal newCardinal) {
-        this.orientation = valueToCardinal(cardinalValue(this.orientation) + cardinalValue(newCardinal));
-    }
-
-    private int cardinalValue(Cardinal cardinal) {
-        return switch (cardinal) {
-            case NORTH -> 0;
-            case WEST  -> 1;
-            case SOUTH -> 2;
-            case EAST  -> 3;
-            default    -> -1;
-        };
-    }
-    private Cardinal valueToCardinal(int value) {
-        return switch ((value + 4) % 4) {
-            case 0  -> Cardinal.NORTH;
-            case 1  -> Cardinal.WEST;
-            case 2  -> Cardinal.SOUTH;
-            case 3  -> Cardinal.EAST;
-            default -> null;
-        };
-    }
-
-    // Returns how many clockwise rotations (90°) are between 'from' and 'to'.
-    public int cardinalDifference(Cardinal from, Cardinal to) {
-        return (cardinalValue(to) - cardinalValue(from) + 4) % 4;
+        this.orientation = OrientationHelper.valueToCardinal(OrientationHelper.cardinalValue(this.orientation) + OrientationHelper.cardinalValue(newCardinal));
     }
 }

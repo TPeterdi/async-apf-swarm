@@ -1,7 +1,6 @@
 package async.apf.model;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,7 +46,6 @@ public class Robot {
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
-        this.targetPattern.setOrientation(currentConfiguration.getOrientation());
         this.lookLatch.countDown();
     }
 
@@ -131,11 +129,19 @@ public class Robot {
             
         }
         // flip back
-        if (currentConfiguration.isXMirrored()) {
+        if (currentConfiguration.isXMirrored() &&
+            (currentConfiguration.getOrientation() == Cardinal.SOUTH || currentConfiguration.getOrientation() == Cardinal.NORTH)) {
             if (realMovement == Cardinal.EAST)
                 realMovement = Cardinal.WEST;
             else if (realMovement == Cardinal.WEST)
                 realMovement = Cardinal.EAST;
+        }
+        if (currentConfiguration.isXMirrored() &&
+            (currentConfiguration.getOrientation() == Cardinal.EAST || currentConfiguration.getOrientation() == Cardinal.WEST)) {
+            if (realMovement == Cardinal.NORTH)
+                realMovement = Cardinal.SOUTH;
+            else if (realMovement == Cardinal.SOUTH)
+                realMovement = Cardinal.NORTH;
         }
         return realMovement;
     }
@@ -275,7 +281,7 @@ public class Robot {
     }
 
     private Boolean c5;
-    // y-coordinate of the tail is odd
+    // y-coordinate of the tail is on an odd line (coordinate is even)
     private void checkC5() {
         c5 = currentConfiguration.getTailPosition().getY() % 2 == 0;
     }
