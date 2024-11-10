@@ -32,7 +32,7 @@ public class Simulation implements IEventListener {
 
     private int delay;
 
-    // TODO: track statistics
+    private final SimulationStatistics statistics;
 
     // Constructor to initialize the simulation with starting configuration, target pattern, and robots
     public Simulation(EventEmitter globalEventEmitter, List<Coordinate> startingConfiguration, List<Coordinate> targetPattern) throws InvalidInputException {
@@ -47,6 +47,12 @@ public class Simulation implements IEventListener {
         }
         
         this.scheduler = new AsyncScheduler(robotCount);
+        List<SER> SERs = getSER();
+        this.statistics = new SimulationStatistics(
+            robotCount,
+            Math.max(SERs.get(0).getWidth(),  SERs.get(1).getWidth() ),
+            Math.max(SERs.get(0).getHeight(), SERs.get(1).getHeight())
+        );
 
         this.robots = new ArrayList<>();
         for (int i = 0; i < robotCount; i++) {
@@ -66,6 +72,7 @@ public class Simulation implements IEventListener {
                         Thread.sleep(desync);
                     }
                     pickedRobot.activate(randomIndex, this.delay);
+                    this.statistics.incrementActivationCounter(randomIndex);
                 }
                 catch (Exception ex) {
                     System.err.println(ex.getMessage());
@@ -73,6 +80,37 @@ public class Simulation implements IEventListener {
             }
             globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_END));
         });
+    }
+
+    private List<SER> getSER() {
+        int minSX = Integer.MAX_VALUE;
+        int minSY = Integer.MAX_VALUE;
+        int maxSX = Integer.MIN_VALUE;
+        int maxSY = Integer.MIN_VALUE;
+        int minTX = Integer.MAX_VALUE;
+        int minTY = Integer.MAX_VALUE;
+        int maxTX = Integer.MIN_VALUE;
+        int maxTY = Integer.MIN_VALUE;
+        // Iterate over the points to find the min and max x, y values
+        for (int i = 0; i < this.currentConfiguration.size(); i++) {
+            int sx = currentConfiguration.get(i).getX();
+            int sy = currentConfiguration.get(i).getY();
+            minSX = Math.min(minSX, sx);
+            minSY = Math.min(minSY, sy);
+            maxSX = Math.max(maxSX, sx);
+            maxSY = Math.max(maxSY, sy);
+            int tx = targetPattern.get(i).getX();
+            int ty = targetPattern.get(i).getY();
+            minTX = Math.min(minTX, tx);
+            minTY = Math.min(minTY, ty);
+            maxTX = Math.max(maxTX, tx);
+            maxTY = Math.max(maxTY, ty);
+        }
+
+        List<SER> result = new ArrayList<>();
+        result.add(new SER(minSX, minSY, maxSX, maxSY));
+        result.add(new SER(minTX, minTY, maxTX, maxTY));
+        return result;
     }
 
     public void setDelay(int delay) {
@@ -133,50 +171,62 @@ public class Simulation implements IEventListener {
 
     @Override
     public synchronized void onEvent(IEvent event) {
-        if (event instanceof RobotEvent robotEvent) {
-            RobotEventType eventType = robotEvent.getEventType();
-            int index = robotEvent.getId();
-            Robot pickedRobot = robots.get(index);
-            
-            Coordinate currentCoordinate = currentConfiguration.get(index);
-            int currentX = currentCoordinate.getX();
-            int currentY = currentCoordinate.getY();
+        if (!(event instanceof RobotEvent robotEvent)) return;
 
-            int phase = ((RobotEvent) event).getPhase();
+        RobotEventType eventType = robotEvent.getEventType();
+        int index = robotEvent.getId();
+        int phase = robotEvent.getPhase();
 
-            switch (eventType) {
-                case ACTIVE -> {}
-                case STAY_PUT -> {}
-                case LOOK -> {
-                    globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_LOOKING, phase, currentX, currentY, currentX, currentY));
-                    Coordinate robotLocation = currentConfiguration.get(index);
-                    pickedRobot.supplyConfigurations(translateConfigurationToRobotsCoordinate(robotLocation), this.targetPattern);
-                }
-                case COMPUTE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_COMPUTING, phase, currentX, currentY, currentX, currentY));
-                case MOVE_NORTH -> {
-                    currentCoordinate.moveBy(0, 1);
-                    globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_MOVING, phase, currentX, currentY, currentX, currentY + 1));
-                    checkForCollisions();
-                }
-                case MOVE_EAST -> {
-                    currentCoordinate.moveBy(1, 0);
-                    globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_MOVING, phase, currentX, currentY, currentX + 1, currentY));
-                    checkForCollisions();
-                }
-                case MOVE_SOUTH -> {
-                    currentCoordinate.moveBy(0, -1);
-                    globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_MOVING, phase, currentX, currentY, currentX, currentY - 1));
-                    checkForCollisions();
-                }
-                case MOVE_WEST -> {
-                    currentCoordinate.moveBy(-1, 0);
-                    globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_MOVING, phase, currentX, currentY, currentX - 1, currentY));
-                    checkForCollisions();
-                }
-                case IDLE -> globalEventEmitter.emitEvent(new SimulationEvent(index, SimulationEventType.ROBOT_IDLE, phase, currentX, currentY, currentX, currentY));
-                case PATTERN_COMPLETE -> this.completed = true;
-                default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
-            }
+        Robot pickedRobot = robots.get(index);
+        Coordinate currentCoordinate = currentConfiguration.get(index);
+        int currentX = currentCoordinate.getX();
+        int currentY = currentCoordinate.getY();
+
+        switch (eventType) {
+            case ACTIVE             -> handleActive();
+            case STAY_PUT           -> handleStayPut();
+            case LOOK               -> handleLookEvent(index, phase, currentX, currentY, pickedRobot, currentCoordinate);
+            case COMPUTE            -> emitRobotEvent(index, SimulationEventType.ROBOT_COMPUTING, phase, currentX, currentY);
+            case MOVE_NORTH         -> handleMoveEvent(index, phase, currentX, currentY, 0, 1);
+            case MOVE_EAST          -> handleMoveEvent(index, phase, currentX, currentY, 1, 0);
+            case MOVE_SOUTH         -> handleMoveEvent(index, phase, currentX, currentY, 0, -1);
+            case MOVE_WEST          -> handleMoveEvent(index, phase, currentX, currentY, -1, 0);
+            case IDLE               -> emitRobotEvent(index, SimulationEventType.ROBOT_IDLE, phase, currentX, currentY);
+            case PATTERN_COMPLETE   -> this.completed = true;
+            default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
         }
+    }
+    
+    private void handleActive() {
+        // Handle ACTIVE event if any specific logic is needed
+    }
+    
+    private void handleStayPut() {
+        // Handle STAY_PUT event if any specific logic is needed
+    }
+    
+    private void handleLookEvent(int index, int phase, int x, int y, Robot robot, Coordinate coord) {
+        statistics.incrementCycleCounter(index);
+        emitRobotEvent(index, SimulationEventType.ROBOT_LOOKING, phase, x, y);
+        Coordinate robotLocation = currentConfiguration.get(index);
+        robot.supplyConfigurations(translateConfigurationToRobotsCoordinate(robotLocation), this.targetPattern);
+    }
+    
+    private void handleMoveEvent(int index, int phase, int x, int y, int deltaX, int deltaY) {
+        currentConfiguration.get(index).moveBy(deltaX, deltaY);
+        emitRobotEvent(index, SimulationEventType.ROBOT_MOVING, phase, x, y, x + deltaX, y + deltaY);
+        statistics.incrementStepCounter(index);
+        statistics.incrementPhaseCounter(index, phase);
+        List<SER> SERs = getSER();
+        statistics.trackSERSize(SERs.get(0).getWidth(), SERs.get(0).getHeight());
+        checkForCollisions();
+    }
+    
+    private void emitRobotEvent(int index, SimulationEventType type, int phase, int startX, int startY) {
+        emitRobotEvent(index, type, phase, startX, startY, startX, startY);
+    }
+    
+    private void emitRobotEvent(int index, SimulationEventType type, int phase, int startX, int startY, int endX, int endY) {
+        globalEventEmitter.emitEvent(new SimulationEvent(index, type, phase, startX, startY, endX, endY));
     }
 }

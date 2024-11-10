@@ -46,7 +46,6 @@ public class Robot {
     public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
-        this.targetPattern.setOrientation(currentConfiguration.getOrientation());
         if (this.targetPattern.isXMirrored() != this.currentConfiguration.isXMirrored()) {
             this.targetPattern.mirror();
         }
@@ -133,11 +132,19 @@ public class Robot {
             
         }
         // flip back
-        if (currentConfiguration.isXMirrored() && (currentConfiguration.getOrientation() == Cardinal.NORTH || currentConfiguration.getOrientation() == Cardinal.SOUTH)) {
+        if (currentConfiguration.isXMirrored() &&
+            (currentConfiguration.getOrientation() == Cardinal.SOUTH || currentConfiguration.getOrientation() == Cardinal.NORTH)) {
             if (realMovement == Cardinal.EAST)
                 realMovement = Cardinal.WEST;
             else if (realMovement == Cardinal.WEST)
                 realMovement = Cardinal.EAST;
+        }
+        if (currentConfiguration.isXMirrored() &&
+            (currentConfiguration.getOrientation() == Cardinal.EAST || currentConfiguration.getOrientation() == Cardinal.WEST)) {
+            if (realMovement == Cardinal.NORTH)
+                realMovement = Cardinal.SOUTH;
+            else if (realMovement == Cardinal.SOUTH)
+                realMovement = Cardinal.NORTH;
         }
         return realMovement;
     }
@@ -611,9 +618,15 @@ public class Robot {
     private void doPhaseVI() {
         this.currentPhase = 6;
         Coordinate headPosition = currentConfiguration.getHeadPosition();
+        Coordinate diff = currentConfiguration.getCoordinates().get(1).difference(targetPattern.getCoordinates().get(1));
         if (headPosition.equals(currentConfiguration.getSelfPosition()) &&
-            !headPosition.equals(targetPattern.getHeadPosition())) {
-            this.nextMove = Cardinal.EAST;
+            headPosition.getX() + diff.getX() != targetPattern.getHeadPosition().getX()) {
+            if (currentConfiguration.getSelfPosition().getX() + diff.getX() < targetPattern.getHeadPosition().getX()) {
+                this.nextMove = Cardinal.EAST;
+            }
+            else {
+                this.nextMove = Cardinal.WEST;
+            }
         }
     }
 

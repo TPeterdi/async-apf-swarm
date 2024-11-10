@@ -123,14 +123,29 @@ public class ConfigurationOrientation {
         
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
 
+
         Coordinate diff = coordinates.get(0).difference(other.coordinates.get(0));
+        boolean result = true;
         for (int idx = 1; idx < coordinates.size() - 1; idx++) {
             Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(idx));
             if (!diff.equals(currentDifference)) {
-                return false;
+                result = false;
+                break;
             }
         }
-        return true;
+        if (result)
+            return true;
+
+        diff = coordinates.get(0).difference(other.coordinates.get(other.coordinates.size() - 1));
+        result = true;
+        for (int idx = 1; idx < coordinates.size() - 1; idx++) {
+            Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(other.coordinates.size() - idx - 1));
+            if (!diff.equals(currentDifference)) {
+                result = false;
+                break;
+            }
+        }
+        return result;
     }
 
     public boolean primePrimeEquals(Object obj) {
@@ -143,13 +158,27 @@ public class ConfigurationOrientation {
         ConfigurationOrientation other = (ConfigurationOrientation) obj;
 
         Coordinate diff = coordinates.get(1).difference(other.coordinates.get(1));
+        boolean result = true;
         for (int idx = 2; idx < coordinates.size() - 1; idx++) {
             Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(idx));
             if (!diff.equals(currentDifference)) {
-                return false;
+                result = false;
+                break;
             }
         }
-        return true;
+        if (result)
+            return true;
+
+        diff = coordinates.get(1).difference(other.coordinates.get(other.coordinates.size() - 2));
+        result = true;
+        for (int idx = 2; idx < coordinates.size() - 1; idx++) {
+            Coordinate currentDifference = coordinates.get(idx).difference(other.coordinates.get(other.coordinates.size() - idx - 1));
+            if (!diff.equals(currentDifference)) {
+                result = false;
+                break;
+            }
+        }
+        return result;
     }
 
     public List<Coordinate> getCoordinates() {
