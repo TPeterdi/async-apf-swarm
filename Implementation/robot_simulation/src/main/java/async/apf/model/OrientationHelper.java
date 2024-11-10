@@ -29,13 +29,17 @@ public final class OrientationHelper {
     }
 
     public static ConfigurationOrientation orientConfiguration(List<Coordinate> configuration) {
+        List<Coordinate> copy = new ArrayList<>();
+        for (Coordinate pos : configuration) {
+            copy.add(new Coordinate(pos.getX(), pos.getY()));
+        }
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
         int maxY = Integer.MIN_VALUE;
 
         // Iterate over the points to find the min and max x, y values
-        for (Coordinate point : configuration) {
+        for (Coordinate point : copy) {
             int x = point.getX();
             int y = point.getY();
             minX = Math.min(minX, x);
@@ -51,21 +55,21 @@ public final class OrientationHelper {
         Coordinate origin = new Coordinate(minX, minY);
 
         // Reposition configuration to the origin.
-        for (Coordinate point : configuration) {
+        for (Coordinate point : copy) {
             point.translateInPlace(origin);
         }
 
         // Rotate the configuration such that it's a "tall" rectangle (height >= width)
         boolean rotated = false;
         if (width > height) {
-            makeConfigurationTall(height, configuration);
+            makeConfigurationTall(height, copy);
             int tmp = height;
             height = width;
             width = tmp;
             rotated = true;
         }
 
-        Boolean[][] positionMatrix = initializePositionMatrix(width, height, configuration);
+        Boolean[][] positionMatrix = initializePositionMatrix(width, height, copy);
         ConfigurationOrientation orientation = findBestOrientation(width, height, positionMatrix);
         if (rotated) {
             orientation.adjustOrientationByCardinal(Cardinal.EAST);
