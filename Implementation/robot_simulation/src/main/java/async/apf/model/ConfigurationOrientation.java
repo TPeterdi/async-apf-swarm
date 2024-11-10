@@ -77,6 +77,19 @@ public class ConfigurationOrientation {
             .collect(Collectors.joining(""));
     }
 
+    public void mirror() {
+        List<Boolean> newBinaryRepresentation = new ArrayList<>();
+        for (int idx = 0; idx < binaryRepresentation.size(); idx++) {
+            int x = width - 1 - (idx % width);
+            int y = idx / width;
+            newBinaryRepresentation.add(binaryRepresentation.get(y * width + x));
+        }
+        binaryRepresentation = newBinaryRepresentation;
+        createCoordinates();
+        xMirrored = !xMirrored;
+    }
+    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)

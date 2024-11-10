@@ -1,7 +1,6 @@
 package async.apf.model;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,7 +47,9 @@ public class Robot {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
         this.targetPattern.setOrientation(currentConfiguration.getOrientation());
-        this.targetPattern.setXMirrored(currentConfiguration.isXMirrored());
+        if (this.targetPattern.isXMirrored() != this.currentConfiguration.isXMirrored()) {
+            this.targetPattern.mirror();
+        }
         this.lookLatch.countDown();
     }
 
