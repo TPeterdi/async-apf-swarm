@@ -41,6 +41,7 @@ public class View extends Application implements IView {
         HBox randomTargetRow = new HBox(10, randomTargetMaxWidthField, randomTargetMaxHeightField);
 
         Button generateRandomPatternsButton = new Button("Randomize input");
+        Button batchRunButton = new Button("Batch run");
         viewMethods.simulationStartButton = new Button("Simulation start");
         viewMethods.simulationStartButton.setDisable(true);
 
@@ -60,6 +61,7 @@ public class View extends Application implements IView {
                 e1.printStackTrace();
             }
         });
+        batchRunButton.setOnAction(e -> viewMethods.openBatchRunSettingsWindow());
         viewMethods.simulationStartButton.setOnAction(e -> {
             System.out.println("Simulation beginning...");
             System.out.println("Initial state: " + viewMethods.initialStates);
@@ -75,6 +77,7 @@ public class View extends Application implements IView {
             randomInitialRow,
             randomTargetRow,
             generateRandomPatternsButton,
+            batchRunButton,
             viewMethods.simulationStartButton
             );
         Scene scene = new Scene(layout, 500, 300);

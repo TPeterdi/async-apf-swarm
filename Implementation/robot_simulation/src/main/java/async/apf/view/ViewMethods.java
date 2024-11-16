@@ -15,12 +15,16 @@ import async.apf.view.enums.ViewEventType;
 import async.apf.view.events.ViewCoordinatesEvent;
 import async.apf.view.events.ViewSimulationEvent;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -429,5 +433,390 @@ public class ViewMethods {
 
         // Convert Set to List and return
         return new ArrayList<>(coordinates);
+    }
+
+    public void openBatchRunSettingsWindow() {
+        Stage newWindow = new Stage();
+        newWindow.setTitle("Batch Run Settings");
+
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+        gridPane.setAlignment(Pos.CENTER);
+
+        // Batch size input
+        LabeledPositiveIntegerField batchSizeField = new LabeledPositiveIntegerField("Batch Size", 100);
+        gridPane.add(batchSizeField, 0, 0);
+
+        // Robot count input (editable by default)
+        LabeledPositiveRangeField robotCountField = new LabeledPositiveRangeField("Robot Count", 10, 20);
+        gridPane.add(robotCountField, 0, 1);
+
+        // Initial area toggle and inputs
+        ToggleGroup initialAreaToggleGroup = new ToggleGroup();
+        RadioButton initialAreaFileToggle = new RadioButton("Initial config: Fix");
+        RadioButton initialAreaRangeToggle = new RadioButton("Initial config: Range");
+        initialAreaFileToggle.setToggleGroup(initialAreaToggleGroup);
+        initialAreaRangeToggle.setToggleGroup(initialAreaToggleGroup);
+        initialAreaRangeToggle.setSelected(true); // Default to range input
+
+        // Initial area range input
+        LabeledPositiveRangeField initialAreaWidthField = new LabeledPositiveRangeField("Initial config width", 10, 20);
+        LabeledPositiveRangeField initialAreaHeightField = new LabeledPositiveRangeField("Initial config height", 10, 20);
+
+        // Initial area file input
+        FileInputField initialAreaFileField = new FileInputField("Initial config file");
+        initialAreaFileField.setDisable(true); // Disable file input initially
+
+        // Initial area input (range and file on the same line)
+        HBox initialAreaInput = new HBox(10, 
+            new VBox(10, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField),
+            new VBox(10, initialAreaFileToggle, initialAreaFileField)
+        );
+        gridPane.add(initialAreaInput, 0, 2, 2, 1); // Spanning 2 columns
+
+        // Target area toggle and inputs
+        ToggleGroup targetAreaToggleGroup = new ToggleGroup();
+        RadioButton targetAreaFileToggle = new RadioButton("Target pattern: Fix");
+        RadioButton targetAreaRangeToggle = new RadioButton("Target pattern: Range");
+        targetAreaFileToggle.setToggleGroup(targetAreaToggleGroup);
+        targetAreaRangeToggle.setToggleGroup(targetAreaToggleGroup);
+        targetAreaRangeToggle.setSelected(true); // Default to range input
+
+        // Target area range input
+        LabeledPositiveRangeField targetAreaWidthField = new LabeledPositiveRangeField("Target pattern width", 10, 20);
+        LabeledPositiveRangeField targetAreaHeightField = new LabeledPositiveRangeField("Target pattern height", 10, 20);
+
+        // Target area file input
+        FileInputField targetAreaFileField = new FileInputField("Target pattern file");
+        targetAreaFileField.setDisable(true); // Disable file input initially
+
+        // Target area input (range and file on the same line)
+        HBox targetAreaInput = new HBox(10, 
+            new VBox(10, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField),
+            new VBox(10, targetAreaFileToggle, targetAreaFileField)
+        );
+        gridPane.add(targetAreaInput, 0, 6, 2, 1); // Spanning 2 columns
+
+        // "Run Batch" button
+        Button runBatchButton = new Button("Run Batch");
+        runBatchButton.setOnAction(e -> {
+            // Handle file inputs and disable robot count editing
+            int robotCount = robotCountField.getRange()[1]; // Default value
+
+            if (initialAreaFileToggle.isSelected()) {
+                robotCount = initialAreaFileField.getCoordinateCount();
+            } else if (targetAreaFileToggle.isSelected()) {
+                robotCount = targetAreaFileField.getCoordinateCount();
+            }
+
+            //TODO rework this method!
+            runBatch(
+                batchSizeField.getValue(),
+                initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                robotCountField
+            );
+        });
+        gridPane.add(runBatchButton, 0, 10, 2, 1);
+
+        // File selection logic for Initial Area
+        initialAreaFileField.setOnFileSelected(() -> {
+            if (initialAreaFileField.hasValidFile()) {
+                int coordinateCount = initialAreaFileField.getCoordinateCount();
+                robotCountField.setValue(coordinateCount, coordinateCount); // Set robot count to coordinate count
+                robotCountField.setDisable(true); // Disable robot count fields
+                robotCountField.setEditable(false); // Make robot count fields non-editable
+            } else {
+                robotCountField.clear(); // Clear robot count if no valid file
+                robotCountField.setDisable(false); // Enable robot count fields for manual input
+                robotCountField.setEditable(true); // Make robot count fields editable
+            }
+            updateRunBatchButtonState(
+                initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                robotCountField, runBatchButton
+            );
+        });
+        // File selection logic for Target Area
+        targetAreaFileField.setOnFileSelected(() -> {
+            if (targetAreaFileField.hasValidFile()) {
+                int coordinateCount = targetAreaFileField.getCoordinateCount();
+                robotCountField.setValue(coordinateCount, coordinateCount); // Set robot count to coordinate count
+                robotCountField.setDisable(true); // Disable robot count fields
+                robotCountField.setEditable(false); // Make robot count fields non-editable
+            } else {
+                robotCountField.clear(); // Clear robot count if no valid file
+                robotCountField.setDisable(false); // Enable robot count fields for manual input
+                robotCountField.setEditable(true); // Make robot count fields editable
+            }
+            updateRunBatchButtonState(
+                initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                robotCountField, runBatchButton
+            );
+        });
+        // Toggle logic to handle file selection enabling/disabling and robot count updating
+        initialAreaToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == initialAreaFileToggle) {
+                initialAreaWidthField.setDisable(true);
+                initialAreaHeightField.setDisable(true);
+                initialAreaFileField.setDisable(false);
+                robotCountField.setDisable(true); // Disable robot count fields
+                robotCountField.setEditable(false); // Make robot count fields non-editable
+
+                // Clear or update robot count based on file
+                if (initialAreaFileField.hasValidFile()) {
+                    int coordinateCount = initialAreaFileField.getCoordinateCount();
+                    robotCountField.setValue(coordinateCount, coordinateCount);
+                    robotCountField.setDisable(true); // Disable robot count fields
+                    robotCountField.setEditable(false); // Make robot count fields non-editable
+                } else {
+                    robotCountField.clear();
+                }
+                targetAreaFileToggle.setSelected(false);
+                targetAreaRangeToggle.setSelected(true);
+            } else {
+                initialAreaWidthField.setDisable(false);
+                initialAreaHeightField.setDisable(false);
+                initialAreaFileField.setDisable(true);
+                robotCountField.setDisable(false); // Re-enable robot count fields for manual input
+                robotCountField.setEditable(true); // Make robot count fields editable
+            }
+            updateRunBatchButtonState(
+                initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                robotCountField, runBatchButton
+            );
+        });
+        
+        targetAreaToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == targetAreaFileToggle) {
+                targetAreaWidthField.setDisable(true);
+                targetAreaHeightField.setDisable(true);
+                targetAreaFileField.setDisable(false);
+                robotCountField.setDisable(true); // Disable robot count fields
+                robotCountField.setEditable(false); // Make robot count fields non-editable
+        
+                // Clear or update robot count based on file
+                if (targetAreaFileField.hasValidFile()) {
+                    int coordinateCount = targetAreaFileField.getCoordinateCount();
+                    robotCountField.setValue(coordinateCount, coordinateCount);
+                    robotCountField.setDisable(true); // Disable robot count fields
+                    robotCountField.setEditable(false); // Make robot count fields non-editable
+                } else {
+                    robotCountField.clear();
+                }
+                initialAreaFileToggle.setSelected(false);
+                initialAreaRangeToggle.setSelected(true);
+            } else {
+                targetAreaWidthField.setDisable(false);
+                targetAreaHeightField.setDisable(false);
+                targetAreaFileField.setDisable(true);
+                robotCountField.setDisable(false); // Re-enable robot count fields for manual input
+                robotCountField.setEditable(true); // Make robot count fields editable
+            }
+            updateRunBatchButtonState(
+                initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                robotCountField, runBatchButton
+            );
+        });
+
+        robotCountField.setOnValueChanged(() -> {
+            updateRunBatchButtonState(
+                    initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                    targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                    robotCountField, runBatchButton
+            );
+        });
+
+        initialAreaWidthField.setOnValueChanged(() -> {
+            updateRunBatchButtonState(
+                    initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                    targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                    robotCountField, runBatchButton
+            );
+        });
+        
+        initialAreaHeightField.setOnValueChanged(() -> {
+            updateRunBatchButtonState(
+                    initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                    targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                    robotCountField, runBatchButton
+            );
+        });
+        
+        targetAreaWidthField.setOnValueChanged(() -> {
+            updateRunBatchButtonState(
+                    initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                    targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                    robotCountField, runBatchButton
+            );
+        });
+        
+        targetAreaHeightField.setOnValueChanged(() -> {
+            updateRunBatchButtonState(
+                    initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+                    targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+                    robotCountField, runBatchButton
+            );
+        });
+        
+        Scene scene = new Scene(gridPane, 600, 500);
+        newWindow.setScene(scene);
+        newWindow.show();
+    }
+
+    private boolean validateSettings(
+        RadioButton initialAreaFileToggle, 
+        RadioButton initialAreaRangeToggle, 
+        LabeledPositiveRangeField initialAreaWidthField, 
+        LabeledPositiveRangeField initialAreaHeightField, 
+        FileInputField initialAreaFileField,
+        RadioButton targetAreaFileToggle,
+        RadioButton targetAreaRangeToggle,
+        LabeledPositiveRangeField targetAreaWidthField,
+        LabeledPositiveRangeField targetAreaHeightField,
+        FileInputField targetAreaFileField,
+        LabeledPositiveRangeField robotCountField
+    ) {
+        // Validate Initial Area settings
+        if (initialAreaFileToggle.isSelected()) {
+            if (!initialAreaFileField.hasValidFile() || initialAreaFileField.getCoordinateCount() == 0)
+                return false;  // Invalid file or no coordinates
+            if (robotCountField.getRange()[0] != initialAreaFileField.getCoordinateCount())
+                return false;  // Robot count doesn't match coordinate count
+            if (robotCountField.getRange()[1] != initialAreaFileField.getCoordinateCount())
+                return false;  // Robot count doesn't match coordinate count
+        }
+        else if (initialAreaRangeToggle.isSelected()) {
+            if (!initialAreaWidthField.isValid())
+                return false; 
+            if (!initialAreaHeightField.isValid())
+                return false; 
+        }
+
+        // Validate Target Area settings
+        if (targetAreaFileToggle.isSelected()) {
+            if (!targetAreaFileField.hasValidFile() || targetAreaFileField.getCoordinateCount() == 0)
+                return false;  // Invalid file or no coordinates
+            if (robotCountField.getRange()[0] != targetAreaFileField.getCoordinateCount())
+                return false;  // Robot count doesn't match coordinate count
+            if (robotCountField.getRange()[1] != targetAreaFileField.getCoordinateCount())
+                return false;  // Robot count doesn't match coordinate count
+        }
+        else if (targetAreaRangeToggle.isSelected()) {
+            if (!targetAreaWidthField.isValid())
+                return false; 
+            if (!targetAreaHeightField.isValid())
+                return false; 
+        }
+        
+        // Validate robot count settings
+        if (!robotCountField.isValid())
+            return false;
+        if (robotCountField.getRange()[1] > initialAreaWidthField.getRange()[0] * initialAreaHeightField.getRange()[0] ||
+            robotCountField.getRange()[1] >  targetAreaWidthField.getRange()[0] *  targetAreaHeightField.getRange()[0])
+            return false;
+
+        return true;
+    }
+
+    // Update the "Run Batch" button based on validation
+    private void updateRunBatchButtonState(
+        RadioButton initialAreaFileToggle, 
+        RadioButton initialAreaRangeToggle, 
+        LabeledPositiveRangeField initialAreaWidthField, 
+        LabeledPositiveRangeField initialAreaHeightField, 
+        FileInputField initialAreaFileField,
+        RadioButton targetAreaFileToggle,
+        RadioButton targetAreaRangeToggle,
+        LabeledPositiveRangeField targetAreaWidthField,
+        LabeledPositiveRangeField targetAreaHeightField,
+        FileInputField targetAreaFileField,
+        LabeledPositiveRangeField robotCountField,
+        Button runBatchButton
+    ) {
+        boolean isValid = validateSettings(
+            initialAreaFileToggle, initialAreaRangeToggle, initialAreaWidthField, initialAreaHeightField, initialAreaFileField,
+            targetAreaFileToggle, targetAreaRangeToggle, targetAreaWidthField, targetAreaHeightField, targetAreaFileField,
+            robotCountField);
+
+        runBatchButton.setDisable(!isValid);
+    }
+
+    // Example stub method for runBatch
+    private void runBatch(
+        int batchSize,
+        RadioButton initialAreaFileToggle, 
+        RadioButton initialAreaRangeToggle, 
+        LabeledPositiveRangeField initialAreaWidthField, 
+        LabeledPositiveRangeField initialAreaHeightField, 
+        FileInputField initialAreaFileField,
+        RadioButton targetAreaFileToggle,
+        RadioButton targetAreaRangeToggle,
+        LabeledPositiveRangeField targetAreaWidthField,
+        LabeledPositiveRangeField targetAreaHeightField,
+        FileInputField targetAreaFileField,
+        LabeledPositiveRangeField robotCountField
+    ) {
+        Random rng = new Random();
+        for (int i = 0; i < batchSize; i++) {
+            int robotCountMin = robotCountField.getRange()[0];
+            int robotCountMax = robotCountField.getRange()[1];
+            int robotCount = robotCountMin + rng.nextInt(robotCountMax - robotCountMin + 1);
+
+            List<Coordinate> initialConfig;
+            if (initialAreaRangeToggle.isSelected()) {
+                int initialConfigWidthMin, initialConfigWidthMax,
+                    initialConfigHeightMin, initialConfigHeightMax;
+                initialConfigWidthMin = initialAreaWidthField.getRange()[0];
+                initialConfigWidthMax = initialAreaWidthField.getRange()[0];
+                int width = initialConfigWidthMin + rng.nextInt(initialConfigWidthMax - initialConfigWidthMin + 1);
+                
+                initialConfigHeightMin = initialAreaHeightField.getRange()[0];
+                initialConfigHeightMax = initialAreaHeightField.getRange()[0];
+                int height = initialConfigHeightMin + rng.nextInt(initialConfigHeightMax - initialConfigHeightMin + 1);
+
+                initialConfig = generateCoordinates(robotCount, width, height);
+            }
+            else {
+                initialConfig = initialAreaFileField.getCoordinates();
+            }
+
+            List<Coordinate> targetPattern;
+            if (targetAreaRangeToggle.isSelected()) {
+                int targetPatternWidthMin, targetPatternWidthMax,
+                    targetPatternHeightMin, targetPatternHeightMax;
+                targetPatternWidthMin = initialAreaWidthField.getRange()[0];
+                targetPatternWidthMax = initialAreaWidthField.getRange()[0];
+                int width = targetPatternWidthMin + rng.nextInt(targetPatternWidthMax - targetPatternWidthMin + 1);
+
+                targetPatternHeightMin = initialAreaHeightField.getRange()[0];
+                targetPatternHeightMax = initialAreaHeightField.getRange()[0];
+                int height = targetPatternHeightMin + rng.nextInt(targetPatternHeightMax - targetPatternHeightMin + 1);
+                
+                targetPattern = generateCoordinates(robotCount, width, height);
+            }
+            else {
+                targetPattern = initialAreaFileField.getCoordinates();
+            }
+            startSimulation(robotCount, initialConfig, targetPattern);
+        }
+    }
+
+    private void startSimulation(
+        int robotCount,
+        List<Coordinate> initialAreaCoordinates,
+        List<Coordinate> targetAreaCoordinates
+    ) {
+        // Perform batch operations using the given data
+        System.out.println("Robot count: " + robotCount);
+        System.out.println("Initial configuration coordinates: " + initialAreaCoordinates);
+        System.out.println("Target pattern coordinates: " + targetAreaCoordinates);
+    
+        // Additional batch processing logic would go here...
     }
 }
