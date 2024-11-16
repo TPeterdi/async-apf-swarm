@@ -1,4 +1,4 @@
-package async.apf.view;
+package async.apf.view.elements;
 
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
