@@ -1,9 +1,13 @@
-package async.apf.view;
+package async.apf.view.elements.batch_run;
 
 import java.util.List;
 import java.util.Random;
 
 import async.apf.model.Coordinate;
+import async.apf.view.ViewMethods;
+import async.apf.view.elements.FileInputField;
+import async.apf.view.elements.LabeledPositiveIntegerField;
+import async.apf.view.elements.LabeledPositiveRangeField;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -31,6 +35,8 @@ public class BatchRunSettingsWindow {
     private final LabeledPositiveRangeField targetAreaWidthField;
     private final LabeledPositiveRangeField targetAreaHeightField;
     private final Button runBatchButton;
+
+    private final Random rng = new Random();
 
     public BatchRunSettingsWindow() {
         batchSizeField = new LabeledPositiveIntegerField("Batch Size", 100);
@@ -65,14 +71,11 @@ public class BatchRunSettingsWindow {
         gridPane.add(batchSizeField, 0, 0);
         gridPane.add(robotCountField, 0, 1);
 
-        // Add initial area inputs
         addInitialAreaInputs(gridPane);
-
-        // Add target area inputs
         addTargetAreaInputs(gridPane);
 
-        // Add "Run Batch" button
         runBatchButton.setOnAction(e -> runBatch());
+
         gridPane.add(runBatchButton, 0, 10, 2, 1);
 
         Scene scene = new Scene(gridPane, 600, 500);
@@ -118,11 +121,8 @@ public class BatchRunSettingsWindow {
     }
 
     private boolean validateSettings() {
-        // Validate Initial Area settings
         if (!validateInitialArea()) return false;
-        // Validate Target Area settings
         if (!validateTargetArea()) return false;
-        // Validate robot count settings
         return validateRobotCount();
     }
 
@@ -145,7 +145,6 @@ public class BatchRunSettingsWindow {
     }
 
     private boolean validateTargetArea() {
-        // Validate Target Area settings
         if (targetAreaFileToggle.isSelected()) {
             if (!targetAreaFileField.hasValidFile() || targetAreaFileField.getCoordinateCount() == 0)
                 return false;  // Invalid file or no coordinates
@@ -168,38 +167,37 @@ public class BatchRunSettingsWindow {
     }
 
     private void runBatch() {
-        Random rng = new Random();
         int batchSize = batchSizeField.getValue();
 
         for (int i = 0; i < batchSize; i++) {
             int robotCount = robotCountField.getRange()[1]; // Default to the upper range value
 
-            List<Coordinate> initialConfig = getInitialConfig(robotCount, rng);
-            List<Coordinate> targetPattern = getTargetPattern(robotCount, rng);
+            List<Coordinate> initialConfig = getInitialConfig(robotCount);
+            List<Coordinate> targetPattern = getTargetPattern(robotCount);
 
             startSimulation(robotCount, initialConfig, targetPattern);
         }
     }
 
-    private List<Coordinate> getInitialConfig(int robotCount, Random rng) {
+    private List<Coordinate> getInitialConfig(int robotCount) {
         if (initialAreaFileToggle.isSelected()) {
             return initialAreaFileField.getCoordinates();
         }
         else {
             int width = initialAreaWidthField.getRange()[0] + rng.nextInt(initialAreaWidthField.getRange()[1] - initialAreaWidthField.getRange()[0] + 1);
             int height = initialAreaHeightField.getRange()[0] + rng.nextInt(initialAreaHeightField.getRange()[1] - initialAreaHeightField.getRange()[0] + 1);
-            return ViewMethods.generateCoordinates(robotCount, width, height);
+            return ViewMethods.generateCoordinates(rng, robotCount, width, height);
         }
     }
 
-    private List<Coordinate> getTargetPattern(int robotCount, Random rng) {
+    private List<Coordinate> getTargetPattern(int robotCount) {
         if (targetAreaFileToggle.isSelected()) {
             return targetAreaFileField.getCoordinates();
         }
         else {
             int width = targetAreaWidthField.getRange()[0] + rng.nextInt(targetAreaWidthField.getRange()[1] - targetAreaWidthField.getRange()[0] + 1);
             int height = targetAreaHeightField.getRange()[0] + rng.nextInt(targetAreaHeightField.getRange()[1] - targetAreaHeightField.getRange()[0] + 1);
-            return ViewMethods.generateCoordinates(robotCount, width, height);
+            return ViewMethods.generateCoordinates(rng, robotCount, width, height);
         }
     }
 

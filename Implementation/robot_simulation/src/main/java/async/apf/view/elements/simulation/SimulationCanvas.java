@@ -1,4 +1,4 @@
-package async.apf.view;
+package async.apf.view.elements.simulation;
 
 import java.util.List;
 
@@ -158,14 +158,6 @@ public final class SimulationCanvas<T extends IPositioned> extends Canvas {
         for (double y = startY; y < height; y += scaledGridSpacing) {
             gc.strokeLine(0, y, width, y);
         }
-
-        // Draw origin marker
-        // -- only use for debugging --
-        // double originScreenX = width / 2 - cameraX * zoom;
-        // double originScreenY = height / 2 + cameraY * zoom;
-        // gc.setStroke(Color.RED);
-        // gc.strokeLine(originScreenX - 10, originScreenY, originScreenX + 10, originScreenY);
-        // gc.strokeLine(originScreenX, originScreenY - 10, originScreenX, originScreenY + 10);
 
         // Draw points on the grid
         drawPoints(width, height);

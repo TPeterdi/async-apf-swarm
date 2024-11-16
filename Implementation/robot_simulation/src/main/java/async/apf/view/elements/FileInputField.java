@@ -1,4 +1,4 @@
-package async.apf.view;
+package async.apf.view.elements;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,9 +14,9 @@ import javafx.stage.FileChooser;
 
 public class FileInputField extends GridPane  {
 
-    private Label label;
-    private Label fileNameLabel;  // Label to display the file name
-    private Button selectFileButton;
+    private final Label label;
+    private final Label fileNameLabel;  // Label to display the file name
+    private final Button selectFileButton;
     private File selectedFile;
     private int coordinateCount;
     private int[] dimensions;
@@ -53,6 +53,7 @@ public class FileInputField extends GridPane  {
         });
     }
 
+    @SuppressWarnings("CallToPrintStackTrace")
     private void processFile() {
         if (selectedFile != null) {
             try {
@@ -63,8 +64,10 @@ public class FileInputField extends GridPane  {
 
                 this.coordinateCount = coordinateStrings.length;
 
-                int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
-                int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+                int minX = Integer.MAX_VALUE;
+                int minY = Integer.MAX_VALUE;
+                int maxX = Integer.MIN_VALUE;
+                int maxY = Integer.MIN_VALUE;
                 this.coordinates = new ArrayList<>();
 
                 for (String coordinateString : coordinateStrings) {

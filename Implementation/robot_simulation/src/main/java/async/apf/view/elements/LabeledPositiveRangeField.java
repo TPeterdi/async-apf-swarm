@@ -1,4 +1,4 @@
-package async.apf.view;
+package async.apf.view.elements;
 
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -113,7 +113,7 @@ public class LabeledPositiveRangeField extends HBox {
 
             return min <= max && min > 0 && max > 0;
         }
-        catch (Exception ex) {
+        catch (NumberFormatException ex) {
             return false;
         }
     }

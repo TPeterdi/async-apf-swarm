@@ -1,5 +1,5 @@
 module async.apf.view {
-    requires javafx.controls;
+    requires transitive javafx.controls;
     requires javafx.fxml;
     requires java.desktop;
 
