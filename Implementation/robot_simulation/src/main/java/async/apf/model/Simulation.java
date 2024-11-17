@@ -62,7 +62,15 @@ public class Simulation implements IEventListener {
         this.simulationThread = new Thread(() -> {
             Random random = new Random();
             while (!this.completed) {
-                if (this.isPaused) continue;
+                synchronized (this) {
+                    if (this.isPaused) {
+                        try {
+                            this.wait(); // Wait until notified
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
 
                 int randomIndex = this.scheduler.pickNext();
                 Robot pickedRobot = this.robots.get(randomIndex);
@@ -127,8 +135,9 @@ public class Simulation implements IEventListener {
         this.simulationThread.start();
     }
 
-    public void resume() {
+    public synchronized void resume() {
         this.isPaused = false;
+        this.notify(); // Notify the thread to resume
     }
 
     public void pause() {
@@ -170,7 +179,7 @@ public class Simulation implements IEventListener {
     }
 
     @Override
-    public synchronized void onEvent(IEvent event) {
+    public void onEvent(IEvent event) {
         if (!(event instanceof RobotEvent robotEvent)) return;
 
         RobotEventType eventType = robotEvent.getEventType();
@@ -185,7 +194,7 @@ public class Simulation implements IEventListener {
         switch (eventType) {
             case ACTIVE             -> handleActive();
             case STAY_PUT           -> handleStayPut();
-            case LOOK               -> handleLookEvent(index, phase, currentX, currentY, pickedRobot, currentCoordinate);
+            case LOOK               -> handleLookEvent(index, phase, currentX, currentY, pickedRobot);
             case COMPUTE            -> emitRobotEvent(index, SimulationEventType.ROBOT_COMPUTING, phase, currentX, currentY);
             case MOVE_NORTH         -> handleMoveEvent(index, phase, currentX, currentY, 0, 1);
             case MOVE_EAST          -> handleMoveEvent(index, phase, currentX, currentY, 1, 0);
@@ -205,7 +214,7 @@ public class Simulation implements IEventListener {
         // Handle STAY_PUT event if any specific logic is needed
     }
     
-    private void handleLookEvent(int index, int phase, int x, int y, Robot robot, Coordinate coord) {
+    private void handleLookEvent(int index, int phase, int x, int y, Robot robot) {
         statistics.incrementCycleCounter(index);
         emitRobotEvent(index, SimulationEventType.ROBOT_LOOKING, phase, x, y);
         Coordinate robotLocation = currentConfiguration.get(index);
@@ -228,5 +237,13 @@ public class Simulation implements IEventListener {
     
     private void emitRobotEvent(int index, SimulationEventType type, int phase, int startX, int startY, int endX, int endY) {
         globalEventEmitter.emitEvent(new SimulationEvent(index, type, phase, startX, startY, endX, endY));
+    }
+    
+    public SimulationStatistics getStatistics() {
+        return statistics;
+    }
+    
+    public boolean isComplete() {
+        return completed;
     }
 }

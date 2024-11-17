@@ -17,7 +17,7 @@ import javafx.stage.Stage;
 
 
 public class View extends Application implements IView {
-    public ViewMethods viewMethods;
+    private ViewMethods viewMethods;
     private final EventEmitter globalEventEmitter = new EventEmitter();
     private SimulationWindow simulationWindow;
 

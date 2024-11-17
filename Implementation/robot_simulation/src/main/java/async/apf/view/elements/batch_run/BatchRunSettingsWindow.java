@@ -1,9 +1,23 @@
 package async.apf.view.elements.batch_run;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+
+import javax.swing.JFileChooser;
 
 import async.apf.model.Coordinate;
+import async.apf.model.Simulation;
+import async.apf.model.SimulationStatistics;
+import async.apf.model.events.EventEmitter;
 import async.apf.view.ViewMethods;
 import async.apf.view.elements.FileInputField;
 import async.apf.view.elements.LabeledPositiveIntegerField;
@@ -37,6 +51,7 @@ public class BatchRunSettingsWindow {
     private final Button runBatchButton;
 
     private final Random rng = new Random();
+    private final ExecutorService uiExecutor = Executors.newSingleThreadExecutor();
 
     public BatchRunSettingsWindow() {
         batchSizeField = new LabeledPositiveIntegerField("Batch Size", 100);
@@ -74,7 +89,7 @@ public class BatchRunSettingsWindow {
         addInitialAreaInputs(gridPane);
         addTargetAreaInputs(gridPane);
 
-        runBatchButton.setOnAction(e -> runBatch());
+        runBatchButton.setOnAction(e -> uiExecutor.submit(this::runBatch));
 
         gridPane.add(runBatchButton, 0, 10, 2, 1);
 
@@ -168,15 +183,67 @@ public class BatchRunSettingsWindow {
 
     private void runBatch() {
         int batchSize = batchSizeField.getValue();
+        List<Simulation> simulations = new ArrayList<>();
+        List<SimulationStatistics> stats = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(batchSize);
 
+        int maxConcurrentThreads = 4; // Limit concurrent simulations
+        Semaphore semaphore = new Semaphore(maxConcurrentThreads);
+        ExecutorService executor = Executors.newCachedThreadPool(); // Cached thread pool for dynamic thread management
+
+        // Prepare simulation objects
         for (int i = 0; i < batchSize; i++) {
             int robotCount = robotCountField.getRange()[1]; // Default to the upper range value
 
             List<Coordinate> initialConfig = getInitialConfig(robotCount);
             List<Coordinate> targetPattern = getTargetPattern(robotCount);
 
-            startSimulation(robotCount, initialConfig, targetPattern);
+            try {
+                EventEmitter simulationEventEmitter = new EventEmitter();
+                // Count finished simulations
+                simulationEventEmitter.onEvent("SIMULATION_END", () -> {
+                    latch.countDown();
+                    semaphore.release();
+                    System.out.println((batchSize - latch.getCount()) + " / " + batchSize + " simulations completed!");
+                });
+                Simulation newSimulation = new Simulation(simulationEventEmitter, initialConfig, targetPattern);
+                simulations.add(newSimulation);
+                simulationEventEmitter.addEventListener(newSimulation);
+            }
+            catch (Exception e) {
+                
+            }
         }
+
+        // Run simulations
+        try {
+            for (Simulation simulation : simulations) {
+                executor.submit(() -> {
+                    try {
+                        semaphore.acquire(); // Acquire a permit before starting
+                        simulation.begin(); // Start the simulation
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            }
+
+            // Wait for all simulations to complete
+            latch.await();
+            System.out.println("All objects have completed processing!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            executor.shutdown();
+        }
+
+        // Get stats
+        for (Simulation simulation : simulations)
+            if (simulation.isComplete())
+                stats.add(simulation.getStatistics());
+        
+        String summary = summarizeStats(stats);
+        writeSummaryToFile(summary);
     }
 
     private List<Coordinate> getInitialConfig(int robotCount) {
@@ -201,10 +268,37 @@ public class BatchRunSettingsWindow {
         }
     }
 
-    private void startSimulation(int robotCount, List<Coordinate> initialAreaCoordinates, List<Coordinate> targetAreaCoordinates) {
-        System.out.println("Robot count: " + robotCount);
-        System.out.println("Initial configuration coordinates: " + initialAreaCoordinates);
-        System.out.println("Target pattern coordinates: " + targetAreaCoordinates);
-        // Simulate the batch process here...
+    public static String summarizeStats(List<SimulationStatistics> stats) {
+        if (stats == null || stats.isEmpty()) {
+            return "The list is empty.";
+        }
+
+        // Example summary: Customize based on the type of data in the list
+        StringBuilder summary = new StringBuilder();
+        summary.append("Simulation logs:\n");
+        summary.append("Total items: ").append(stats.size()).append("\n");
+
+        // TODO: do proper mapping and aggregations
+
+        return summary.toString();
+    }
+
+    public static void writeSummaryToFile(String summary) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Summary to File");
+
+        // Show save dialog
+        int userSelection = fileChooser.showSaveDialog(null);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileToSave))) {
+                writer.write(summary);
+                System.out.println("Summary saved to file: " + fileToSave.getAbsolutePath());
+            } catch (IOException e) {
+                System.err.println("Failed to write summary to file: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Save operation cancelled by user.");
+        }
     }
 }

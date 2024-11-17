@@ -18,7 +18,7 @@ public class Robot {
     private int currentId;
 
     // Prevents COMPUTE cycle to start ahead of time
-    private CountDownLatch lookLatch;
+    private volatile CountDownLatch lookLatch;
 
     // These get evaluated after each LOOK phase
     private RobotOrientation currentConfiguration;
@@ -32,7 +32,7 @@ public class Robot {
         this.globalEventEmitter = globalEventEmitter;
     }
 
-    public synchronized void activate(int currentId, int currentDelay) {
+    public void activate(int currentId, int currentDelay) {
         if (this.active) {
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.ACTIVE, this.currentPhase, this.currentId));
             return;
@@ -43,7 +43,7 @@ public class Robot {
         this.executorService.submit(this::cycleLoop);
     }
 
-    public void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
+    public synchronized void supplyConfigurations(List<Coordinate> relativeConfiguration, List<Coordinate> targetPattern) {
         this.currentConfiguration = OrientationHelper.orientRobotAndConfiguration(relativeConfiguration);
         this.targetPattern        = OrientationHelper.orientConfiguration(targetPattern);
         this.lookLatch.countDown();
@@ -55,6 +55,7 @@ public class Robot {
             this.lookLatch = new CountDownLatch(1);
             this.globalEventEmitter.emitEvent(new RobotEvent(RobotEventType.LOOK, this.currentPhase, this.currentId));
             this.lookLatch.await();
+            this.lookLatch = null;
             awaitArtificialDelay();
 
             // COMPUTE

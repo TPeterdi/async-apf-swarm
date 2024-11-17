@@ -88,4 +88,9 @@ public class SimulationEvent implements IEvent {
             return "Robot " + robotIndex + ": " + eventType;
         }
     }
+
+    @Override
+    public String getEventName() {
+        return eventType.name();
+    }
 }

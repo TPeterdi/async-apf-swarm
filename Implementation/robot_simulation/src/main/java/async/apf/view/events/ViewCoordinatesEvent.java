@@ -22,7 +22,13 @@ public class ViewCoordinatesEvent implements IEvent {
     public ViewEventType getEventType() {
         return this.eventType;
     }
+    
     public List<Coordinate> getCoordinates() {
         return this.coordinates;
+    }
+
+    @Override
+    public String getEventName() {
+        return eventType.name();
     }
 }

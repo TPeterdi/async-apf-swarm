@@ -4,7 +4,6 @@ import async.apf.interfaces.IEvent;
 import async.apf.view.enums.ViewEventType;
 
 public class ViewSimulationEvent implements IEvent {
-
     private final ViewEventType eventType;
     private int delay;
 
@@ -20,5 +19,10 @@ public class ViewSimulationEvent implements IEvent {
 
     public int getDelay() {
         return delay;
+    }
+
+    @Override
+    public String getEventName() {
+        return eventType.name();
     }
 }

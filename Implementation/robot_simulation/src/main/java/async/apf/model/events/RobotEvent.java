@@ -25,4 +25,9 @@ public class RobotEvent implements IEvent {
     public int getId() {
         return id;
     }
+
+    @Override
+    public String getEventName() {
+        return eventType.name();
+    }
 }
