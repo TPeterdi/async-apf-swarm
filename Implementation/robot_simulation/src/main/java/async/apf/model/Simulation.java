@@ -1,5 +1,6 @@
 package async.apf.model;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -132,6 +133,7 @@ public class Simulation implements IEventListener {
         this.isPaused = false;
         this.completed = false;
         globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_START));
+        this.statistics.setStartTime(Instant.now());
         this.simulationThread.start();
     }
 
@@ -201,7 +203,7 @@ public class Simulation implements IEventListener {
             case MOVE_SOUTH         -> handleMoveEvent(index, phase, currentX, currentY, 0, -1);
             case MOVE_WEST          -> handleMoveEvent(index, phase, currentX, currentY, -1, 0);
             case IDLE               -> emitRobotEvent(index, SimulationEventType.ROBOT_IDLE, phase, currentX, currentY);
-            case PATTERN_COMPLETE   -> this.completed = true;
+            case PATTERN_COMPLETE   -> endSimulation();
             default -> throw new IllegalArgumentException("Unexpected value: " + eventType);
         }
     }
@@ -245,5 +247,10 @@ public class Simulation implements IEventListener {
     
     public boolean isComplete() {
         return completed;
+    }
+
+    private void endSimulation() {
+        this.completed = true;
+        this.statistics.setEndTime(Instant.now());
     }
 }

@@ -1,5 +1,7 @@
 package async.apf.model;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +18,9 @@ public class SimulationStatistics {
     private final List<Integer> cycleCounter;
     private final List<Integer> stepCounter;
     private final HashMap<Integer, HashMap<Integer, Integer>> phaseCounter;
+
+    private Instant startTime;
+    private Instant endTime;
 
     public SimulationStatistics(int robotCount, int startWidth, int startHeight) {
         this.robotCount = robotCount;
@@ -35,6 +40,7 @@ public class SimulationStatistics {
             }
             phaseCounter.put(i, init);
         }
+        this.startTime = Instant.now();
     }
 
     public void incrementActivationCounter(int index) {
@@ -76,6 +82,31 @@ public class SimulationStatistics {
 
     public int getMaxHeight() {
         return maxHeight;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Instant time) {
+        startTime = time;
+    }
+
+    public Instant getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Instant time) {
+        endTime = time;
+    }
+
+    public long getDuration() {
+        if (startTime == null)
+            return 0;
+        if (endTime == null)
+            return Duration.between(startTime, Instant.now()).toMillis();
+        
+        return Duration.between(startTime, endTime).toMillis();
     }
 
     public void trackSERSize(int a, int b) {
