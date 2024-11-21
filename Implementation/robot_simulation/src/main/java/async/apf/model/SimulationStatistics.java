@@ -68,6 +68,10 @@ public class SimulationStatistics {
         return copy;
     }
 
+    public int getRobotCount() {
+        return robotCount;
+    }
+
     public int getStartWidth() {
         return startWidth;
     }

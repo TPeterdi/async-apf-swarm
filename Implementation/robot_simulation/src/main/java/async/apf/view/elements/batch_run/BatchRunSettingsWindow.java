@@ -242,7 +242,7 @@ public class BatchRunSettingsWindow {
 
         // Prepare simulation objects
         for (int i = 0; i < batchSize; i++) {
-            int robotCount = robotCountField.getRange()[1]; // Default to the upper range value
+            int robotCount = robotCountField.getRange()[0] + rng.nextInt(robotCountField.getRange()[1] - robotCountField.getRange()[0] + 1);
 
             List<Coordinate> initialConfig = getInitialConfig(robotCount);
             List<Coordinate> targetPattern = getTargetPattern(robotCount);
@@ -341,8 +341,23 @@ public class BatchRunSettingsWindow {
         StringBuilder summary = new StringBuilder();
         summary.append("Simulation logs:\n");
         summary.append("Total items: ").append(stats.size()).append("\n");
+        summary.append("Robot count;Time (ms);Total steps;Average step count;Start width;Start height;Max width;Max height").append("\n");
 
-        // TODO: do proper mapping and aggregations
+        for (int idx = 0; idx < stats.size(); idx++) {
+            SimulationStatistics elem = stats.get(idx);
+            int stepCount = elem.getStepCounts()
+                .stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+            summary.append(elem.getRobotCount()).append(';');
+            summary.append(elem.getDuration()).append(';');
+            summary.append(stepCount).append(';');
+            summary.append(String.format("%.2f", (double)stepCount/elem.getRobotCount())).append(';');
+            summary.append(elem.getStartWidth()).append(';');
+            summary.append(elem.getStartHeight()).append(';');
+            summary.append(elem.getMaxWidth()).append(';');
+            summary.append(elem.getMaxHeight()).append("\n");
+        }
 
         return summary.toString();
     }
