@@ -59,6 +59,7 @@ public class BatchRunSettingsWindow {
 
         initialAreaFileToggle = new RadioButton("Initial config: Fix");
         initialAreaFileField = new FileInputField("Initial config file");
+        initialAreaFileField.setDisable(true);
         initialAreaRangeToggle = new RadioButton("Initial config: Range");
         initialAreaWidthField = new LabeledPositiveRangeField("Initial config width", 10, 20);
         initialAreaHeightField = new LabeledPositiveRangeField("Initial config height", 10, 20);
@@ -66,6 +67,7 @@ public class BatchRunSettingsWindow {
         targetAreaFileToggle = new RadioButton("Target pattern: Fix");
         targetAreaRangeToggle = new RadioButton("Target pattern: Range");
         targetAreaFileField = new FileInputField("Target pattern file");
+        targetAreaFileField.setDisable(true);
         targetAreaWidthField = new LabeledPositiveRangeField("Target pattern width", 10, 20);
         targetAreaHeightField = new LabeledPositiveRangeField("Target pattern height", 10, 20);
 
@@ -86,8 +88,8 @@ public class BatchRunSettingsWindow {
         gridPane.add(batchSizeField, 0, 0);
         gridPane.add(robotCountField, 0, 1);
 
-        addInitialAreaInputs(gridPane);
-        addTargetAreaInputs(gridPane);
+        addInitialConfigurationInputs(gridPane);
+        addTargetPatternInputs(gridPane);
 
         runBatchButton.setOnAction(e -> uiExecutor.submit(this::runBatch));
 
@@ -98,7 +100,7 @@ public class BatchRunSettingsWindow {
         newWindow.show();
     }
 
-    private void addInitialAreaInputs(GridPane gridPane) {
+    private void addInitialConfigurationInputs(GridPane gridPane) {
         ToggleGroup initialAreaToggleGroup = new ToggleGroup();
         initialAreaFileToggle.setToggleGroup(initialAreaToggleGroup);
         initialAreaRangeToggle.setToggleGroup(initialAreaToggleGroup);
@@ -110,11 +112,29 @@ public class BatchRunSettingsWindow {
         );
         gridPane.add(initialAreaInput, 0, 2, 2, 1);
 
-        initialAreaFileField.setOnFileSelected(() -> updateRunBatchButtonState());
-        initialAreaToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> updateRunBatchButtonState());
+        initialAreaFileField.setOnFileSelected(() -> {
+            robotCountField.setValue(initialAreaFileField.getCoordinateCount(), initialAreaFileField.getCoordinateCount());
+            updateRunBatchButtonState();
+        });
+
+        initialAreaToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            boolean isRangeSelected = newValue == initialAreaRangeToggle; // Check which toggle is selected
+            initialAreaWidthField.setDisable(!isRangeSelected);
+            initialAreaHeightField.setDisable(!isRangeSelected);
+        
+            boolean isFileSelected = newValue == initialAreaFileToggle; // Check if File toggle is selected
+            initialAreaFileField.setDisable(!isFileSelected);
+            
+            robotCountField.setDisable(!initialAreaRangeToggle.isSelected() || !targetAreaRangeToggle.isSelected());
+            if (isFileSelected) {
+                robotCountField.clear();
+            }
+        
+            updateRunBatchButtonState();
+        });
     }
 
-    private void addTargetAreaInputs(GridPane gridPane) {
+    private void addTargetPatternInputs(GridPane gridPane) {
         ToggleGroup targetAreaToggleGroup = new ToggleGroup();
         targetAreaFileToggle.setToggleGroup(targetAreaToggleGroup);
         targetAreaRangeToggle.setToggleGroup(targetAreaToggleGroup);
@@ -126,8 +146,26 @@ public class BatchRunSettingsWindow {
         );
         gridPane.add(targetAreaInput, 0, 6, 2, 1);
 
-        targetAreaFileField.setOnFileSelected(() -> updateRunBatchButtonState());
-        targetAreaToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> updateRunBatchButtonState());
+        targetAreaFileField.setOnFileSelected(() -> {
+            robotCountField.setValue(targetAreaFileField.getCoordinateCount(), targetAreaFileField.getCoordinateCount());
+            updateRunBatchButtonState();
+        });
+
+        targetAreaToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            boolean isRangeSelected = newValue == targetAreaRangeToggle; // Check which toggle is selected
+            targetAreaWidthField.setDisable(!isRangeSelected);
+            targetAreaHeightField.setDisable(!isRangeSelected);
+        
+            boolean isFileSelected = newValue == targetAreaFileToggle; // Check if File toggle is selected
+            targetAreaFileField.setDisable(!isFileSelected);
+        
+            robotCountField.setDisable(!initialAreaRangeToggle.isSelected() || !targetAreaRangeToggle.isSelected());
+            if (isFileSelected) {
+                robotCountField.clear();
+            }
+        
+            updateRunBatchButtonState();
+        });
     }
 
     private void updateRunBatchButtonState() {
@@ -205,6 +243,11 @@ public class BatchRunSettingsWindow {
                     latch.countDown();
                     semaphore.release();
                     System.out.println((batchSize - latch.getCount()) + " / " + batchSize + " simulations completed!");
+                });
+                simulationEventEmitter.onEvent("SIMULATION_FAIL", () -> {
+                    latch.countDown();
+                    semaphore.release();
+                    System.out.println("Simulation " + (batchSize - latch.getCount()) + " failed!");
                 });
                 Simulation newSimulation = new Simulation(simulationEventEmitter, initialConfig, targetPattern);
                 simulations.add(newSimulation);

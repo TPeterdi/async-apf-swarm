@@ -28,12 +28,15 @@ public class Simulation implements IEventListener {
     private boolean hasBegun = false;
     private volatile boolean isPaused = false;
     private volatile boolean completed = false;
+    private volatile boolean failed = false;
 
     private final Thread simulationThread;
 
     private int delay;
 
     private final SimulationStatistics statistics;
+
+    private final Set<Set<Coordinate>> previousConfigurations = new HashSet<>();
 
     // Constructor to initialize the simulation with starting configuration, target pattern, and robots
     public Simulation(EventEmitter globalEventEmitter, List<Coordinate> startingConfiguration, List<Coordinate> targetPattern) throws InvalidInputException {
@@ -62,7 +65,7 @@ public class Simulation implements IEventListener {
 
         this.simulationThread = new Thread(() -> {
             Random random = new Random();
-            while (!this.completed) {
+            while (!completed && !failed) {
                 synchronized (this) {
                     if (this.isPaused) {
                         try {
@@ -87,7 +90,10 @@ public class Simulation implements IEventListener {
                     System.err.println(ex.getMessage());
                 }
             }
-            globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_END));
+            if (completed)
+                globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_END));
+            if (failed)
+                globalEventEmitter.emitEvent(new SimulationEvent(SimulationEventType.SIMULATION_FAIL));
         });
     }
 
@@ -157,6 +163,18 @@ public class Simulation implements IEventListener {
     public boolean isPaused() {
         return hasBegun && isPaused;
     }
+    
+    public SimulationStatistics getStatistics() {
+        return statistics;
+    }
+    
+    public boolean isComplete() {
+        return completed;
+    }
+
+    private void fail() {
+        this.failed = true;
+    }
 
     private List<Coordinate> translateConfigurationToRobotsCoordinate(Coordinate robotCoordinate) {
         List<Coordinate> translatedCoordinates = new ArrayList<>();
@@ -176,8 +194,23 @@ public class Simulation implements IEventListener {
                 collisions.add(coordinate);
         
         if (!collisions.isEmpty())
-            for (Coordinate coordinate : collisions)
+            for (Coordinate coordinate : collisions) {
                 System.err.println("Collision at " + coordinate.toString() + "!");
+                fail();
+            }
+    }
+
+    private void checkForRepetition() {
+        Set<Coordinate> newConfigSet = new HashSet<>(currentConfiguration);
+
+        for (Set<Coordinate> item : previousConfigurations) {
+            if (item.equals(newConfigSet)) {
+                fail();
+                return;
+            }
+        }
+
+        previousConfigurations.add(newConfigSet);
     }
 
     @Override
@@ -231,6 +264,7 @@ public class Simulation implements IEventListener {
         List<SER> SERs = getSER();
         statistics.trackSERSize(SERs.get(0).getWidth(), SERs.get(0).getHeight());
         checkForCollisions();
+        checkForRepetition();
     }
     
     private void emitRobotEvent(int index, SimulationEventType type, int phase, int startX, int startY) {
@@ -239,14 +273,6 @@ public class Simulation implements IEventListener {
     
     private void emitRobotEvent(int index, SimulationEventType type, int phase, int startX, int startY, int endX, int endY) {
         globalEventEmitter.emitEvent(new SimulationEvent(index, type, phase, startX, startY, endX, endY));
-    }
-    
-    public SimulationStatistics getStatistics() {
-        return statistics;
-    }
-    
-    public boolean isComplete() {
-        return completed;
     }
 
     private void endSimulation() {
