@@ -22,10 +22,12 @@ import async.apf.view.ViewMethods;
 import async.apf.view.elements.FileInputField;
 import async.apf.view.elements.LabeledPositiveIntegerField;
 import async.apf.view.elements.LabeledPositiveRangeField;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.GridPane;
@@ -50,6 +52,8 @@ public class BatchRunSettingsWindow {
     private final LabeledPositiveRangeField targetAreaHeightField;
     private final Button runBatchButton;
 
+    private final ProgressBar progressBar;
+
     private final Random rng = new Random();
     private final ExecutorService uiExecutor = Executors.newSingleThreadExecutor();
 
@@ -72,6 +76,10 @@ public class BatchRunSettingsWindow {
         targetAreaHeightField = new LabeledPositiveRangeField("Target pattern height", 10, 20);
 
         runBatchButton = new Button("Run Batch");
+        
+        progressBar = new ProgressBar(0);
+        progressBar.setPrefWidth(450);
+        progressBar.setPadding(new Insets(10, 0, 0, 0));
     }
 
     public void openBatchRunSettingsWindow() {
@@ -94,6 +102,7 @@ public class BatchRunSettingsWindow {
         runBatchButton.setOnAction(e -> uiExecutor.submit(this::runBatch));
 
         gridPane.add(runBatchButton, 0, 10, 2, 1);
+        gridPane.add(progressBar, 0, 11, 2, 1);
 
         Scene scene = new Scene(gridPane, 600, 500);
         newWindow.setScene(scene);
@@ -124,7 +133,7 @@ public class BatchRunSettingsWindow {
         
             boolean isFileSelected = newValue == initialAreaFileToggle; // Check if File toggle is selected
             initialAreaFileField.setDisable(!isFileSelected);
-            
+
             robotCountField.setDisable(!initialAreaRangeToggle.isSelected() || !targetAreaRangeToggle.isSelected());
             if (isFileSelected) {
                 robotCountField.clear();
@@ -220,6 +229,8 @@ public class BatchRunSettingsWindow {
     }
 
     private void runBatch() {
+        progressBar.setProgress(0);
+
         int batchSize = batchSizeField.getValue();
         List<Simulation> simulations = new ArrayList<>();
         List<SimulationStatistics> stats = new ArrayList<>();
@@ -242,11 +253,21 @@ public class BatchRunSettingsWindow {
                 simulationEventEmitter.onEvent("SIMULATION_END", () -> {
                     latch.countDown();
                     semaphore.release();
+
+                    // Update progress
+                    double progress = (batchSize - latch.getCount()) / (double) batchSize;
+                    Platform.runLater(() -> progressBar.setProgress(progress));
+
                     System.out.println((batchSize - latch.getCount()) + " / " + batchSize + " simulations completed!");
                 });
                 simulationEventEmitter.onEvent("SIMULATION_FAIL", () -> {
                     latch.countDown();
                     semaphore.release();
+
+                    // Update progress
+                    double progress = (batchSize - latch.getCount()) / (double) batchSize;
+                    Platform.runLater(() -> progressBar.setProgress(progress));
+
                     System.out.println("Simulation " + (batchSize - latch.getCount()) + " failed!");
                 });
                 Simulation newSimulation = new Simulation(simulationEventEmitter, initialConfig, targetPattern);
