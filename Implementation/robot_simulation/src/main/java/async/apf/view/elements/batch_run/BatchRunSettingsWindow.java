@@ -339,8 +339,6 @@ public class BatchRunSettingsWindow {
 
         // Example summary: Customize based on the type of data in the list
         StringBuilder summary = new StringBuilder();
-        summary.append("Simulation logs:\n");
-        summary.append("Total items: ").append(stats.size()).append("\n");
         summary.append("Robot count;Time (ms);Total steps;Average step count;Start width;Start height;Max width;Max height").append("\n");
 
         for (int idx = 0; idx < stats.size(); idx++) {
@@ -364,17 +362,23 @@ public class BatchRunSettingsWindow {
 
     public static void writeSummaryToFile(String summary) {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Summary to File");
-
+        fileChooser.setDialogTitle("Save Summary as CSV File");
+    
         // Show save dialog
         int userSelection = fileChooser.showSaveDialog(null);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
+    
+            // Ensure file has .csv extension
+            if (!fileToSave.getName().toLowerCase().endsWith(".csv")) {
+                fileToSave = new File(fileToSave.getAbsolutePath() + ".csv");
+            }
+    
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileToSave))) {
                 writer.write(summary);
-                System.out.println("Summary saved to file: " + fileToSave.getAbsolutePath());
+                System.out.println("CSV saved to file: " + fileToSave.getAbsolutePath());
             } catch (IOException e) {
-                System.err.println("Failed to write summary to file: " + e.getMessage());
+                System.err.println("Failed to write CSV to file: " + e.getMessage());
             }
         } else {
             System.out.println("Save operation cancelled by user.");
