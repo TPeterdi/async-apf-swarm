@@ -17,10 +17,9 @@ public class SimulationStatistics {
 
     private final List<Integer> activationCounter;
     private final List<Integer> cycleCounter;
-    private final List<Integer> stepCounter;
     
-    // Keys: 1st: phase number (1-7)
-    //     - 2nd: robot index
+    // Keys: 1st: robot index
+    //     - 2nd: phase number (1-7)
     private final HashMap<Integer, HashMap<Integer, Integer>> phaseCounter;
 
     private Instant startTime;
@@ -36,7 +35,6 @@ public class SimulationStatistics {
 
         this.activationCounter = new ArrayList<>(Collections.nCopies(robotCount, 0));
         this.cycleCounter = new ArrayList<>(Collections.nCopies(robotCount, 0));
-        this.stepCounter = new ArrayList<>(Collections.nCopies(robotCount, 0));
         this.phaseCounter = new HashMap<>(robotCount);
         for (int i = 0; i < robotCount; i++) {
             HashMap<Integer, Integer> init = new HashMap<>();
@@ -49,38 +47,43 @@ public class SimulationStatistics {
     }
 
     public void incrementActivationCounter(int index) {
-        this.activationCounter.set(index, this.stepCounter.get(index) + 1);
+        this.activationCounter.set(index, this.activationCounter.get(index) + 1);
     }
 
     public void incrementCycleCounter(int index) {
-        this.cycleCounter.set(index, this.stepCounter.get(index) + 1);
+        this.cycleCounter.set(index, this.cycleCounter.get(index) + 1);
     }
 
-    public void incrementStepCounter(int index) {
-        int count = this.stepCounter.get(index) + 1;
-        if (count > maxStepCount)
-            maxStepCount = count;
-        this.stepCounter.set(index, count);
-    }
+    public void incrementStepsForPhase(int robotIndex, int phaseNumber) {
+        var robotSteps = phaseCounter.get(robotIndex);
+        int newCount = robotSteps.values()
+            .stream()
+            .mapToInt(Integer::intValue)
+            .sum() + 1;
+        if (newCount > maxStepCount)
+            maxStepCount = newCount;
 
-    public void incrementPhaseCounter(int robotIndex, int phaseNumber) {
-        int phaseCount = phaseCounter.get(robotIndex).get(phaseNumber);
-        phaseCounter.get(robotIndex).put(phaseNumber, phaseCount + 1);
+        int phaseStepCount = robotSteps.get(phaseNumber);
+        robotSteps.put(phaseNumber, phaseStepCount + 1);
     }
 
     public List<Integer> getStepCounts() {
         List<Integer> copy = new ArrayList<>(this.robotCount);
-        for (int count : this.stepCounter) {
-            copy.add(count);
+        for (final var phaseSteps : this.phaseCounter.values()) {
+            copy.add(phaseSteps
+                .values()
+                .stream()
+                .mapToInt(Integer::intValue)
+                .sum()
+            );
         }
         return copy;
     }
 
     public int getStepCountForPhase(int k) {
-        return phaseCounter.get(k)
-            .values()
+        return phaseCounter.values()
             .stream()
-            .mapToInt(Integer::intValue)
+            .mapToInt(robotPhases -> robotPhases.getOrDefault(k, 0))
             .sum();
     }
 

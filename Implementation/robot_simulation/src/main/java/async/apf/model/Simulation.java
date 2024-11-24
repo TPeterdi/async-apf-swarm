@@ -259,8 +259,7 @@ public class Simulation implements IEventListener {
     private void handleMoveEvent(int index, int phase, int x, int y, int deltaX, int deltaY) {
         currentConfiguration.get(index).moveBy(deltaX, deltaY);
         emitRobotEvent(index, SimulationEventType.ROBOT_MOVING, phase, x, y, x + deltaX, y + deltaY);
-        statistics.incrementStepCounter(index);
-        statistics.incrementPhaseCounter(index, phase);
+        statistics.incrementStepsForPhase(index, phase);
         List<SER> SERs = getSER();
         statistics.trackSERSize(SERs.get(0).getWidth(), SERs.get(0).getHeight());
         checkForCollisions();
