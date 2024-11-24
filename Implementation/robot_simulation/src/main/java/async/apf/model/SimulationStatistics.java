@@ -13,10 +13,14 @@ public class SimulationStatistics {
     private final int startHeight;
     private int maxWidth;
     private int maxHeight;
+    private int maxStepCount;
 
     private final List<Integer> activationCounter;
     private final List<Integer> cycleCounter;
     private final List<Integer> stepCounter;
+    
+    // Keys: 1st: phase number (1-7)
+    //     - 2nd: robot index
     private final HashMap<Integer, HashMap<Integer, Integer>> phaseCounter;
 
     private Instant startTime;
@@ -28,6 +32,7 @@ public class SimulationStatistics {
         this.startHeight = Math.max(startWidth, startHeight);
         this.maxWidth = this.startWidth;
         this.maxHeight = this.startHeight;
+        this.maxStepCount = 0;
 
         this.activationCounter = new ArrayList<>(Collections.nCopies(robotCount, 0));
         this.cycleCounter = new ArrayList<>(Collections.nCopies(robotCount, 0));
@@ -52,7 +57,10 @@ public class SimulationStatistics {
     }
 
     public void incrementStepCounter(int index) {
-        this.stepCounter.set(index, this.stepCounter.get(index) + 1);
+        int count = this.stepCounter.get(index) + 1;
+        if (count > maxStepCount)
+            maxStepCount = count;
+        this.stepCounter.set(index, count);
     }
 
     public void incrementPhaseCounter(int robotIndex, int phaseNumber) {
@@ -66,6 +74,14 @@ public class SimulationStatistics {
             copy.add(count);
         }
         return copy;
+    }
+
+    public int getStepCountForPhase(int k) {
+        return phaseCounter.get(k)
+            .values()
+            .stream()
+            .mapToInt(Integer::intValue)
+            .sum();
     }
 
     public int getRobotCount() {
@@ -86,6 +102,10 @@ public class SimulationStatistics {
 
     public int getMaxHeight() {
         return maxHeight;
+    }
+
+    public int getMaxStepCount() {
+        return maxStepCount;
     }
 
     public Instant getStartTime() {
@@ -118,5 +138,9 @@ public class SimulationStatistics {
         int currentHeight = Math.max(a, b);
         this.maxWidth = Math.max(this.maxWidth, currentWidth);
         this.maxHeight = Math.max(this.maxHeight, currentHeight);
+    }
+
+    public HashMap<Integer, HashMap<Integer, Integer>> getPhaseStepCounts() {
+        return phaseCounter;
     }
 }

@@ -339,23 +339,42 @@ public class BatchRunSettingsWindow {
 
         // Example summary: Customize based on the type of data in the list
         StringBuilder summary = new StringBuilder();
-        summary.append("Robot count;Time (ms);Total steps;Average step count;Start width;Start height;Max width;Max height").append("\n");
 
+        // 
+        summary.append("Robot count;Time (ms);Total steps;Average step count;Highest individual step count;Start width;Start height;Max width;Max height;Phase I step count;Phase II step count;Phase III step count;Phase IV step count;Phase V step count;Phase VI step count;Phase VII step count").append("\n");
         for (int idx = 0; idx < stats.size(); idx++) {
             SimulationStatistics elem = stats.get(idx);
             int stepCount = elem.getStepCounts()
                 .stream()
                 .mapToInt(Integer::intValue)
                 .sum();
-            summary.append(elem.getRobotCount()).append(';');
-            summary.append(elem.getDuration()).append(';');
-            summary.append(stepCount).append(';');
-            summary.append(String.format("%.2f", (double)stepCount/elem.getRobotCount())).append(';');
-            summary.append(elem.getStartWidth()).append(';');
-            summary.append(elem.getStartHeight()).append(';');
-            summary.append(elem.getMaxWidth()).append(';');
-            summary.append(elem.getMaxHeight()).append("\n");
+
+            summary.append(elem.getRobotCount());
+
+            summary.append(';').append(elem.getDuration());
+
+            summary.append(';').append(stepCount);
+            summary.append(';').append(String.format("%.2f", (double)stepCount/elem.getRobotCount()));
+            summary.append(';').append(elem.getMaxStepCount());
+
+            summary.append(';').append(elem.getStartWidth());
+            summary.append(';').append(elem.getStartHeight());
+            summary.append(';').append(elem.getMaxWidth());
+            summary.append(';').append(elem.getMaxHeight());
+
+            summary.append(';').append(elem.getStepCountForPhase(1));
+            summary.append(';').append(elem.getStepCountForPhase(2));
+            summary.append(';').append(elem.getStepCountForPhase(3));
+            summary.append(';').append(elem.getStepCountForPhase(4));
+            summary.append(';').append(elem.getStepCountForPhase(5));
+            summary.append(';').append(elem.getStepCountForPhase(6));
+            summary.append(';').append(elem.getStepCountForPhase(7));
+
+            summary.append('\n');
+
         }
+
+        summary.append('\n');
 
         return summary.toString();
     }
